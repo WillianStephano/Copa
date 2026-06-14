@@ -1,6 +1,9 @@
 import { subscribeToAuth } from "./auth.js";
 import { groups, STORAGE_PREFIX, VALID_TABS } from "./data.js";
-import { calculateStandings } from "./standings.js";
+import {
+  calculateOfficialStandings,
+  calculateStandings
+} from "./standings.js";
 import { clearScores, setScore } from "./storage.js";
 import {
   renderCalendar,
@@ -89,11 +92,12 @@ function showToast(message) {
 }
 
 function renderAll() {
-  const standings = calculateStandings();
+  const simulatedStandings = calculateStandings();
+  const officialStandings = calculateOfficialStandings(state.officialMatches);
   const groupFilterHtml = renderGroupFilter(state);
   els.groupFilter.innerHTML = groupFilterHtml;
 
-  const overview = renderOverview(standings);
+  const overview = renderOverview(state, officialStandings);
   els.dashboardMetrics.innerHTML = overview.metrics;
   els.leadersGrid.innerHTML = overview.leaders;
   els.overviewMeta.textContent = overview.meta;
@@ -101,12 +105,12 @@ function renderAll() {
   els.heroTeams.textContent = overview.heroTeams;
   els.heroFilled.textContent = overview.heroFilled;
 
-  const simulator = renderSimulator(state, standings);
+  const simulator = renderSimulator(state, simulatedStandings);
   els.groupsGrid.innerHTML = simulator.html;
   els.simulatorEmpty.classList.toggle("active", simulator.empty);
   els.simulatorMeta.textContent = simulator.meta;
 
-  const standingsView = renderStandings(state, standings);
+  const standingsView = renderStandings(state, officialStandings);
   els.standingsGrid.innerHTML = standingsView.html;
   els.standingsEmpty.classList.toggle("active", standingsView.empty);
   els.standingsMeta.textContent = standingsView.meta;

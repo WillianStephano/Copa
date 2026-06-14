@@ -269,20 +269,28 @@ export function renderCalendar(state) {
   return { html, empty: rows.length === 0, meta: `${rows.length} de ${allMatches().length} jogos visíveis` };
 }
 
-export function renderOverview(standings) {
+export function renderOverview(state, standings) {
   const totalMatches = allMatches().length;
-  const filled = allMatches().filter(({ groupId, index }) => getScore(groupId, index, "home") !== "" && getScore(groupId, index, "away") !== "").length;
+  const finished = Object.values(state.officialMatches).filter((match) =>
+    match.status === "FINISHED"
+    && Number.isInteger(match.homeScore)
+    && Number.isInteger(match.awayScore)
+  ).length;
   const totalTeams = allGroupIds().reduce((sum, groupId) => sum + groups[groupId].teams.length, 0);
   const leaders = allGroupIds()
     .map((groupId) => {
       const leader = standings[groupId][0];
+      const played = standings[groupId].reduce((sum, row) => sum + row.played, 0) / 2;
+      const leaderText = played
+        ? `${leader.team} lidera com ${leader.points} ponto${leader.points === 1 ? "" : "s"}.`
+        : "Aguardando o primeiro resultado oficial.";
       return `<article class="${groupId === "C" ? "card brazil-card" : "card"}">
         <div class="card-header">
           <div>
             <h3>${groups[groupId].name}</h3>
-            <p class="meta-line">${leader.team} lidera com ${leader.points} ponto${leader.points === 1 ? "" : "s"}.</p>
+            <p class="meta-line">${leaderText}</p>
           </div>
-          <span class="badge">${leader.goalDiff >= 0 ? "+" : ""}${leader.goalDiff} SG</span>
+          <span class="badge">${played}/6 jogos</span>
         </div>
         ${renderStandingsTable(standings, groupId)}
       </article>`;
@@ -295,12 +303,12 @@ export function renderOverview(standings) {
       ["Grupos", allGroupIds().length],
       ["Seleções", totalTeams],
       ["Jogos", totalMatches],
-      ["Preenchidos", `${filled}/${totalMatches}`]
+      ["Encerrados", `${finished}/${totalMatches}`]
     ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join(""),
-    meta: `${Math.round((filled / totalMatches) * 100)}% dos jogos preenchidos`,
+    meta: `${Math.round((finished / totalMatches) * 100)}% dos jogos encerrados`,
     heroGroups: allGroupIds().length,
     heroTeams: totalTeams,
-    heroFilled: `${filled}/${totalMatches}`
+    heroFilled: `${finished}/${totalMatches}`
   };
 }
 

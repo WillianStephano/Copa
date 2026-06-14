@@ -67,3 +67,34 @@ test("calculateStandings usa gols pró como desempate quando pontos e saldo empa
   assert.ok(groupC[0].goalsFor > groupC[1].goalsFor);
   assert.equal(groupC[0].team, "Brasil");
 });
+
+test("calculateOfficialStandings usa somente partidas oficiais encerradas", async () => {
+  const { calculateOfficialStandings } = await import("../js/standings.js");
+
+  const standings = calculateOfficialStandings({
+    "A-0": {
+      groupId: "A",
+      home: "México",
+      away: "África do Sul",
+      status: "FINISHED",
+      homeScore: 2,
+      awayScore: 0
+    },
+    "A-1": {
+      groupId: "A",
+      home: "Coreia do Sul",
+      away: "Tchéquia",
+      status: "SCHEDULED",
+      homeScore: 9,
+      awayScore: 0
+    }
+  });
+
+  assert.equal(standings.A[0].team, "México");
+  assert.equal(standings.A[0].points, 3);
+  assert.equal(standings.A[0].played, 1);
+  assert.equal(
+    standings.A.find((row) => row.team === "Coreia do Sul").played,
+    0
+  );
+});
