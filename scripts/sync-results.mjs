@@ -1,14 +1,25 @@
-import { applicationDefault, cert, initializeApp } from "firebase-admin/app";
+import { cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import { buildRanking } from "../js/ranking.js";
 import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
 
 const credentialsJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-const credential = credentialsJson
-  ? cert(JSON.parse(credentialsJson))
-  : applicationDefault();
+if (!credentialsJson) {
+  throw new Error(
+    "Secret FIREBASE_SERVICE_ACCOUNT_JSON ausente. Cadastre-o em Settings > Secrets and variables > Actions no repositório WillianStephano/Copa."
+  );
+}
 
-initializeApp({ credential });
+let serviceAccount;
+try {
+  serviceAccount = JSON.parse(credentialsJson);
+} catch {
+  throw new Error(
+    "Secret FIREBASE_SERVICE_ACCOUNT_JSON inválido. Cole o conteúdo JSON completo da chave do Firebase."
+  );
+}
+
+initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 async function syncMatches(apiMatches) {
