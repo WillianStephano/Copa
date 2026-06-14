@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   canonicalTeam,
+  fetchOfficialMatches,
   getApiMatchStatus,
   mapApiMatch,
   parseStadiumLocalDate
@@ -67,4 +68,26 @@ test("jogo futuro não usa placar provisório da API", () => {
 
   assert.equal(match.homeScore, null);
   assert.equal(match.awayScore, null);
+});
+
+test("consulta resultados novamente após falha temporária", async () => {
+  let calls = 0;
+  const fetchMock = async () => {
+    calls += 1;
+    if (calls === 1) throw new Error("EAI_AGAIN");
+    return {
+      ok: true,
+      async json() {
+        return { games: [{ id: "1" }] };
+      }
+    };
+  };
+
+  const games = await fetchOfficialMatches(fetchMock, {
+    attempts: 2,
+    baseDelayMs: 0
+  });
+
+  assert.equal(calls, 2);
+  assert.deepEqual(games, [{ id: "1" }]);
 });

@@ -163,14 +163,44 @@ export function mapApiMatch(apiMatch) {
   };
 }
 
-export async function fetchOfficialMatches(fetchImplementation = fetch) {
-  const response = await fetchImplementation(WORLDCUP_API_URL);
-  if (!response.ok) {
-    throw new Error(
-      `worldcup26.ir respondeu ${response.status}: ${await response.text()}`
-    );
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+export async function fetchOfficialMatches(
+  fetchImplementation = fetch,
+  { attempts = 5, baseDelayMs = 2_000 } = {}
+) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchImplementation(WORLDCUP_API_URL);
+      if (response.ok) {
+        const payload = await response.json();
+        return Array.isArray(payload.games) ? payload.games : [];
+      }
+
+      const message = `worldcup26.ir respondeu ${response.status}: ${await response.text()}`;
+      if (response.status < 500 && response.status !== 429) {
+        throw new Error(message);
+      }
+      lastError = new Error(message);
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < attempts) {
+      const delay = baseDelayMs * 2 ** (attempt - 1);
+      console.warn(
+        `Falha ao consultar resultados (tentativa ${attempt}/${attempts}). Nova tentativa em ${delay / 1000}s.`
+      );
+      await wait(delay);
+    }
   }
 
-  const payload = await response.json();
-  return Array.isArray(payload.games) ? payload.games : [];
+  throw new Error(
+    `Não foi possível consultar os resultados após ${attempts} tentativas.`,
+    { cause: lastError }
+  );
 }

@@ -8,14 +8,14 @@ import {
   getFirestore
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBf9wcHdmjDfp2MVnlw3c9NQRi5uLMXv2g",
-    authDomain: "copa2026-bolao-2b10d.firebaseapp.com",
-    projectId: "copa2026-bolao-2b10d",
-    storageBucket: "copa2026-bolao-2b10d.firebasestorage.app",
-    messagingSenderId: "660403474492",
-    appId: "1:660403474492:web:236aa2050535c03ca1f339"
-};
+const CONFIG_URL = "/__/firebase/init.json";
+
+const response = await fetch(CONFIG_URL);
+if (!response.ok) {
+  throw new Error(`Não foi possível carregar a configuração do Firebase (${response.status}).`);
+}
+
+const firebaseConfig = await response.json();
 
 const app = initializeApp(firebaseConfig);
 
