@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsPrediction() {
+      return signedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
+    function predictionIsOpen() {
+      return exists(/databases/$(database)/documents/matches/$(request.resource.data.matchId))
+        && request.time < get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.lockAt;
+    }
+
+    function predictionScoresAreValid() {
+      return request.resource.data.homeScore is int
+        && request.resource.data.awayScore is int
+        && request.resource.data.homeScore >= 0
+        && request.resource.data.homeScore <= 99
+        && request.resource.data.awayScore >= 0
+        && request.resource.data.awayScore <= 99;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /matches/{matchId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /predictions/{predictionId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow create: if ownsPrediction()
+        && predictionIsOpen()
+        && predictionScoresAreValid()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'matchId', 'groupId', 'matchIndex', 'home', 'away',
+          'homeScore', 'awayScore', 'confirmedAt', 'updatedAt'
+        ]);
+      allow update: if signedIn()
+        && resource.data.uid == request.auth.uid
+        && ownsPrediction()
+        && request.resource.data.matchId == resource.data.matchId
+        && predictionIsOpen()
+        && predictionScoresAreValid()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'matchId', 'groupId', 'matchIndex', 'home', 'away',
+          'homeScore', 'awayScore', 'confirmedAt', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /rankings/{uid} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,84 @@
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  background:
+    linear-gradient(135deg, rgba(245, 197, 66, 0.18), transparent 34%),
+    linear-gradient(225deg, rgba(25, 75, 143, 0.12), transparent 42%),
+    radial-gradient(circle at top left, rgba(8, 112, 87, 0.16), transparent 34%),
+    #f4fbf7;
+}
+
+#authScreen {
+  width: min(440px, calc(100% - 32px));
+  margin: 72px auto;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+#authScreen h2 {
+  margin: 0 0 4px;
+  color: var(--green-900);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+#authScreen input,
+#authScreen button {
+  min-height: 46px;
+  border-radius: 6px;
+  font: inherit;
+}
+
+#authScreen input {
+  padding: 0 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--line);
+  outline: none;
+}
+
+#authScreen input:focus {
+  border-color: var(--green-700);
+  box-shadow: 0 0 0 4px rgba(8, 112, 87, 0.14);
+}
+
+#authScreen button {
+  padding: 0 14px;
+  border: 0;
+  color: var(--white);
+  background: var(--green-800);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+#authScreen button:hover {
+  background: var(--green-700);
+}
+
+#authScreen button + button {
+  color: var(--green-900);
+  background: var(--mint-200);
+}
+
+#authScreen button + button:hover {
+  background: #bfe1cf;
+}
+
+@media (max-width: 480px) {
+  #authScreen {
+    margin: 20px auto;
+    width: min(100% - 20px, 440px);
+    padding: 22px;
+  }
+}

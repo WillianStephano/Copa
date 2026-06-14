@@ -1,0 +1,12 @@
+{
+  "name": "copa2026-bolao",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs",
+    "sync:results": "node scripts/sync-results.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.0.0"
+  }
+}
