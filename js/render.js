@@ -20,8 +20,12 @@ export function getMatchVenue(groupId, index) {
 }
 
 export function renderGroupFilter(state) {
+  const todayCount = Object.values(state.officialMatches).filter((match) =>
+    isMatchToday(match)
+  ).length;
   const buttons = [
     `<button class="chip today-chip ${state.todayOnly ? "active" : ""}" data-today-filter type="button" aria-pressed="${state.todayOnly}">Jogos de hoje</button>`,
+    `<button class="chip share-chip" data-share-today type="button" ${todayCount ? "" : "disabled"}>Copiar palpites</button>`,
     `<span class="filter-divider" aria-hidden="true"></span>`,
     `<button class="chip ${state.activeGroup === "ALL" ? "active" : ""}" data-group="ALL" type="button">Todos</button>`
   ];

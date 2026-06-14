@@ -19,6 +19,7 @@ import {
   subscribeToPredictions,
   subscribeToRanking
 } from "./bolao.js";
+import { buildTodayPredictionsMessage } from "./share-predictions.js";
 
 const state = {
   activeTab: "overview",
@@ -142,6 +143,24 @@ function sanitizeScore(value) {
   return digits === "" ? "" : String(Math.min(99, Number(digits)));
 }
 
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Falha ao copiar.");
+}
+
 els.resetScores.addEventListener("click", resetScoresAction);
 
 els.tabs.forEach((tab) => {
@@ -149,6 +168,38 @@ els.tabs.forEach((tab) => {
 });
 
 els.groupFilter.addEventListener("click", (event) => {
+  const shareButton = event.target.closest("[data-share-today]");
+  if (shareButton) {
+    const message = buildTodayPredictionsMessage({
+      predictions: state.predictions,
+      officialMatches: state.officialMatches,
+      displayName: state.user?.displayName || ""
+    });
+
+    if (!message.todayCount) {
+      showToast("Não há jogos hoje.");
+      return;
+    }
+    if (!message.confirmedCount) {
+      showToast("Confirme ao menos um palpite de hoje antes de compartilhar.");
+      return;
+    }
+
+    shareButton.disabled = true;
+    copyText(message.text)
+      .then(() => {
+        const suffix = message.missingCount
+          ? ` ${message.missingCount} ainda não confirmado${message.missingCount === 1 ? "" : "s"}.`
+          : "";
+        showToast(`Palpites copiados!${suffix}`);
+      })
+      .catch(() => showToast("Não foi possível copiar os palpites."))
+      .finally(() => {
+        shareButton.disabled = false;
+      });
+    return;
+  }
+
   const todayButton = event.target.closest("[data-today-filter]");
   if (todayButton) {
     state.todayOnly = !state.todayOnly;
