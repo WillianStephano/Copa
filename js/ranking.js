@@ -4,6 +4,7 @@ export function buildRanking(users, predictions, matches) {
   const entries = new Map();
 
   users.forEach((user) => {
+    if (!user.uid) return;
     entries.set(user.uid, {
       uid: user.uid,
       displayName: user.displayName || "Participante",

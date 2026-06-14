@@ -35,3 +35,13 @@ test("ranking soma pontos e desempata por placares exatos", () => {
   assert.equal(ranking[1].points, 15);
   assert.equal(ranking[1].exactHits, 0);
 });
+
+test("ranking ignora registros sem identificador de usuário", () => {
+  const ranking = buildRanking(
+    [{ displayName: "Perfil incompleto" }],
+    [],
+    new Map()
+  );
+
+  assert.deepEqual(ranking, []);
+});

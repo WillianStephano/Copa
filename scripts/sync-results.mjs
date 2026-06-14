@@ -42,8 +42,13 @@ async function updateRanking() {
     db.collection("matches").get()
   ]);
 
-  const users = usersSnapshot.docs.map((item) => item.data());
-  const predictions = predictionsSnapshot.docs.map((item) => item.data());
+  const users = usersSnapshot.docs.map((item) => ({
+    ...item.data(),
+    uid: item.data().uid || item.id
+  }));
+  const predictions = predictionsSnapshot.docs
+    .map((item) => item.data())
+    .filter((prediction) => prediction.uid && prediction.matchId);
   const matches = new Map(matchesSnapshot.docs.map((item) => [item.id, item.data()]));
   const ranking = buildRanking(users, predictions, matches);
 
