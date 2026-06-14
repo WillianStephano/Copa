@@ -9,7 +9,8 @@ import {
   scorePrediction
 } from "../js/scoring.js";
 
-test("placar exato vale 5 pontos", () => {
+test("placar exato vale 3 pontos", () => {
+  assert.equal(EXACT_SCORE_POINTS, 3);
   assert.deepEqual(
     scorePrediction(
       { homeScore: 2, awayScore: 1 },
@@ -19,7 +20,8 @@ test("placar exato vale 5 pontos", () => {
   );
 });
 
-test("acertar vencedor ou empate vale 3 pontos", () => {
+test("acertar vencedor ou empate vale 2 pontos", () => {
+  assert.equal(OUTCOME_POINTS, 2);
   assert.deepEqual(
     scorePrediction(
       { homeScore: 3, awayScore: 0 },

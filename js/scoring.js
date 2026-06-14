@@ -1,5 +1,5 @@
-export const EXACT_SCORE_POINTS = 5;
-export const OUTCOME_POINTS = 3;
+export const EXACT_SCORE_POINTS = 3;
+export const OUTCOME_POINTS = 2;
 export const PREDICTION_LOCK_MINUTES = 30;
 
 export function matchOutcome(homeScore, awayScore) {
