@@ -1,6 +1,10 @@
 import { flagCodes, groups, matchVenues } from "./data.js";
 import { allGroupIds, allMatches, getScore } from "./storage.js";
-import { getPredictionLockTime, isPredictionLocked } from "./scoring.js";
+import {
+  getPredictionFeedback,
+  getPredictionLockTime,
+  isPredictionLocked
+} from "./scoring.js";
 
 export function flagUrl(team) {
   return `https://flagcdn.com/w40/${flagCodes[team] || "un"}.png`;
@@ -54,6 +58,24 @@ function renderStandingsRows(standings, groupId) {
   }).join("");
 }
 
+function renderOfficialResult(officialMatch, prediction, home, away) {
+  const feedback = getPredictionFeedback(prediction, officialMatch, home, away);
+  if (!feedback) return "";
+
+  const pointsLabel = feedback.points === 1 ? "1 ponto" : `${feedback.points} pontos`;
+  return `<div class="official-result result-${feedback.type}">
+    <div class="official-score">
+      <span>Resultado oficial</span>
+      <strong>${officialMatch.homeScore} x ${officialMatch.awayScore}</strong>
+    </div>
+    <div class="prediction-verdict">
+      <strong>${feedback.title}</strong>
+      <span>${feedback.detail}</span>
+    </div>
+    <span class="points-earned">${pointsLabel}</span>
+  </div>`;
+}
+
 export function renderStandingsTable(standings, groupId, collapsed = false) {
   return `<div class="table-wrap ${collapsed ? "collapsed" : ""}" id="table-${groupId}">
     <table>
@@ -94,8 +116,14 @@ export function renderGroupCard(state, standings, groupId, includeMatches = true
     const awayGoals = Number(awayScore);
     const homeClasses = ["home", completed && homeGoals > awayGoals ? "winner" : ""].filter(Boolean).join(" ");
     const awayClasses = [completed && awayGoals > homeGoals ? "winner" : ""].filter(Boolean).join(" ");
+    const officialResultHtml = renderOfficialResult(
+      officialMatch,
+      confirmedPrediction,
+      home,
+      away
+    );
 
-    return `<div class="match-block ${confirmedPrediction ? "has-confirmed-prediction" : ""}">
+    return `<div class="match-block ${confirmedPrediction ? "has-confirmed-prediction" : ""} ${officialResultHtml ? "has-official-result" : ""}">
       <div class="match-row ${completed ? "completed" : ""}">
         <span class="match-date">${date}</span>
         ${renderTeam(home, homeClasses)}
@@ -105,6 +133,7 @@ export function renderGroupCard(state, standings, groupId, includeMatches = true
         </div>
         ${renderTeam(away, awayClasses)}
       </div>
+      ${officialResultHtml}
       <div class="prediction-actions">
         <span class="prediction-deadline ${locked ? "locked" : ""}">${deadlineText}</span>
         <button class="confirm-prediction ${confirmedMatchesDraft ? "confirmed" : ""}" type="button" data-confirm-prediction="${id}" ${!officialMatch?.kickoffDate || locked || !completed || confirmedMatchesDraft ? "disabled" : ""}>${buttonLabel}</button>
@@ -182,17 +211,24 @@ export function renderCalendar(state) {
   const html = rows
     .map(({ groupId, index, match }) => {
       const [date, home, away] = match;
-      const homeScore = getScore(groupId, index, "home");
-      const awayScore = getScore(groupId, index, "away");
-      const score = homeScore !== "" && awayScore !== "" ? `${homeScore} x ${awayScore}` : "A definir";
+      const id = `${groupId}-${index}`;
+      const officialMatch = state.officialMatches[id];
+      const prediction = state.predictions[id];
+      const finished = officialMatch?.status === "FINISHED"
+        && Number.isInteger(officialMatch.homeScore)
+        && Number.isInteger(officialMatch.awayScore);
+      const score = finished
+        ? `${officialMatch.homeScore} x ${officialMatch.awayScore}`
+        : "A disputar";
       const venue = getMatchVenue(groupId, index);
+      const feedback = getPredictionFeedback(prediction, officialMatch, home, away);
 
       let resultText = "";
       let resultClass = "";
 
-      if (homeScore !== "" && awayScore !== "") {
-        const h = Number(homeScore);
-        const a = Number(awayScore);
+      if (finished) {
+        const h = officialMatch.homeScore;
+        const a = officialMatch.awayScore;
         if (h > a) {
           resultText = `${home} venceu`;
           resultClass = "win";
@@ -212,6 +248,7 @@ export function renderCalendar(state) {
             <span class="badge">${groups[groupId].name}</span>
             <span class="calendar-score">${score}</span>
             ${resultText ? `<span class="calendar-result ${resultClass}">${resultText}</span>` : ""}
+            ${feedback ? `<span class="calendar-prediction result-${feedback.type}">${feedback.title} · ${feedback.points} pts</span>` : ""}
           </div>
           <div class="calendar-teams">
             <img class="flag" src="${flagUrl(home)}" alt="">

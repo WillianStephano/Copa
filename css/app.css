@@ -580,6 +580,10 @@
       box-shadow: inset 4px 0 0 var(--green-700);
     }
 
+    .match-block.has-official-result {
+      box-shadow: none;
+    }
+
     .match-row {
       display: grid;
       grid-template-columns: 55px minmax(0, 1fr) 80px minmax(0, 1fr);
@@ -695,6 +699,93 @@
       padding: 8px;
       border-top: 1px solid rgba(220, 233, 228, 0.8);
       background: rgba(232, 246, 239, 0.52);
+    }
+
+    .official-result {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid rgba(220, 233, 228, 0.9);
+      border-left: 4px solid var(--muted);
+      background: #f3f6f5;
+    }
+
+    .official-result.result-exact {
+      border-left-color: var(--gold-500);
+      background: linear-gradient(90deg, #fff8d8, #f4fbf7);
+    }
+
+    .official-result.result-outcome {
+      border-left-color: var(--green-700);
+      background: var(--mint-100);
+    }
+
+    .official-result.result-miss {
+      border-left-color: var(--red-600);
+      background: #fff1f1;
+    }
+
+    .official-score {
+      display: grid;
+      gap: 2px;
+      min-width: 92px;
+    }
+
+    .official-score span {
+      color: var(--muted);
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .official-score strong {
+      color: var(--green-900);
+      font-family: var(--font-score);
+      font-size: 1.15rem;
+    }
+
+    .prediction-verdict {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .prediction-verdict strong {
+      color: var(--ink);
+      font-size: 0.8rem;
+    }
+
+    .prediction-verdict span {
+      color: var(--muted);
+      font-size: 0.7rem;
+      line-height: 1.35;
+    }
+
+    .points-earned {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: var(--white);
+      background: var(--green-800);
+      font-family: var(--font-score);
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .result-exact .points-earned {
+      color: var(--blue-900);
+      background: var(--gold-500);
+    }
+
+    .result-miss .points-earned,
+    .result-none .points-earned {
+      color: var(--muted);
+      background: #e0e7e4;
     }
 
     .prediction-deadline {
@@ -989,6 +1080,33 @@
       font-family: var(--font-score);
     }
 
+    .calendar-prediction {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: #e8eeeb;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .calendar-prediction.result-exact {
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.5);
+    }
+
+    .calendar-prediction.result-outcome {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .calendar-prediction.result-miss {
+      color: #8f242a;
+      background: #ffe0e1;
+    }
+
     .venue-line {
       display: grid;
       gap: 3px;
@@ -1144,6 +1262,15 @@
       .match-row {
         grid-template-columns: 44px minmax(0, 1fr) 68px minmax(0, 1fr);
         gap: 6px;
+      }
+
+      .official-result {
+        grid-template-columns: 1fr auto;
+      }
+
+      .prediction-verdict {
+        grid-column: 1 / -1;
+        grid-row: 2;
       }
 
       .team {
