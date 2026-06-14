@@ -23,6 +23,7 @@ import {
 const state = {
   activeTab: "overview",
   activeGroup: "ALL",
+  todayOnly: false,
   query: "",
   expandedGroups: new Set(),
   user: null,
@@ -108,6 +109,7 @@ function renderAll() {
   const simulator = renderSimulator(state, simulatedStandings);
   els.groupsGrid.innerHTML = simulator.html;
   els.simulatorEmpty.classList.toggle("active", simulator.empty);
+  els.simulatorEmpty.textContent = simulator.emptyMessage;
   els.simulatorMeta.textContent = simulator.meta;
 
   const standingsView = renderStandings(state, officialStandings);
@@ -147,6 +149,13 @@ els.tabs.forEach((tab) => {
 });
 
 els.groupFilter.addEventListener("click", (event) => {
+  const todayButton = event.target.closest("[data-today-filter]");
+  if (todayButton) {
+    state.todayOnly = !state.todayOnly;
+    renderAll();
+    return;
+  }
+
   const button = event.target.closest("[data-group]");
   if (!button) return;
   state.activeGroup = button.dataset.group;

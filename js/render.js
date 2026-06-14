@@ -5,6 +5,7 @@ import {
   getPredictionLockTime,
   isPredictionLocked
 } from "./scoring.js";
+import { isMatchToday } from "./match-date.js";
 
 export function flagUrl(team) {
   return `https://flagcdn.com/w40/${flagCodes[team] || "un"}.png`;
@@ -20,6 +21,8 @@ export function getMatchVenue(groupId, index) {
 
 export function renderGroupFilter(state) {
   const buttons = [
+    `<button class="chip today-chip ${state.todayOnly ? "active" : ""}" data-today-filter type="button" aria-pressed="${state.todayOnly}">Jogos de hoje</button>`,
+    `<span class="filter-divider" aria-hidden="true"></span>`,
     `<button class="chip ${state.activeGroup === "ALL" ? "active" : ""}" data-group="ALL" type="button">Todos</button>`
   ];
 
@@ -87,14 +90,22 @@ export function renderStandingsTable(standings, groupId, collapsed = false) {
   </div>`;
 }
 
-export function renderGroupCard(state, standings, groupId, includeMatches = true) {
+export function renderGroupCard(
+  state,
+  standings,
+  groupId,
+  includeMatches = true,
+  visibleMatchIndexes = null
+) {
   const group = groups[groupId];
   const finished = group.matches.filter((_, index) => getScore(groupId, index, "home") !== "" && getScore(groupId, index, "away") !== "").length;
   const progress = Math.round((finished / group.matches.length) * 100);
   const expanded = !includeMatches || state.expandedGroups.has(groupId);
   const cardClass = ["card", includeMatches ? "simulator-card" : "", expanded ? "expanded" : "", groupId === "C" ? "brazil-card" : ""].filter(Boolean).join(" ");
+  const matchIndexes = visibleMatchIndexes || group.matches.map((_, index) => index);
 
-  const matchesHtml = group.matches.map(([date, home, away], index) => {
+  const matchesHtml = matchIndexes.map((index) => {
+    const [date, home, away] = group.matches[index];
     const id = `${groupId}-${index}`;
     const officialMatch = state.officialMatches[id];
     const confirmedPrediction = state.predictions[id];
@@ -149,7 +160,7 @@ export function renderGroupCard(state, standings, groupId, includeMatches = true
         <div class="progress-track" aria-hidden="true"><span class="progress-bar" style="width: ${progress}%"></span></div>
       </div>
       <div class="card-actions">
-        <span class="badge">${finished}/6 jogos</span>
+        <span class="badge">${state.todayOnly && includeMatches ? `${matchIndexes.length} hoje` : `${finished}/6 jogos`}</span>
         ${includeMatches ? `<button class="table-toggle" type="button" data-toggle-table="${groupId}" aria-expanded="${expanded}" aria-controls="table-${groupId}">${expanded ? "Ocultar tabela" : "Ver tabela"}</button>` : ""}
       </div>
     </div>
@@ -159,11 +170,28 @@ export function renderGroupCard(state, standings, groupId, includeMatches = true
 }
 
 export function renderSimulator(state, standings) {
-  const visibleGroups = filteredGroupIds(state);
+  const visibleGroups = filteredGroupIds(state)
+    .map((groupId) => ({
+      groupId,
+      matchIndexes: visibleMatchIndexes(state, groupId)
+    }))
+    .filter(({ matchIndexes }) => !state.todayOnly || matchIndexes.length);
+  const visibleTodayCount = visibleGroups.reduce(
+    (total, group) => total + group.matchIndexes.length,
+    0
+  );
+
   return {
-    html: visibleGroups.map((groupId) => renderGroupCard(state, standings, groupId, true)).join(""),
+    html: visibleGroups.map(({ groupId, matchIndexes }) =>
+      renderGroupCard(state, standings, groupId, true, matchIndexes)
+    ).join(""),
     empty: visibleGroups.length === 0,
-    meta: `${visibleGroups.length} de ${allGroupIds().length} grupos visíveis`
+    emptyMessage: state.todayOnly
+      ? "Não há jogos hoje para os filtros selecionados."
+      : "Nenhum grupo encontrado para a busca atual.",
+    meta: state.todayOnly
+      ? `${visibleTodayCount} jogo${visibleTodayCount === 1 ? "" : "s"} hoje · horário de Brasília`
+      : `${visibleGroups.length} de ${allGroupIds().length} grupos visíveis`
   };
 }
 
@@ -197,6 +225,15 @@ function filteredGroupIds(state) {
 
     return normalize(haystack).includes(query);
   });
+}
+
+function visibleMatchIndexes(state, groupId) {
+  return groups[groupId].matches
+    .map((_, index) => index)
+    .filter((index) => {
+      if (!state.todayOnly) return true;
+      return isMatchToday(state.officialMatches[`${groupId}-${index}`]);
+    });
 }
 
 export function renderCalendar(state) {
