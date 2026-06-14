@@ -1,6 +1,6 @@
 import { cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
-import { buildRanking } from "../js/ranking.js";
+import { updateRanking } from "./admin-ranking.mjs";
 import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
 
 const credentialsJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -46,41 +46,10 @@ async function syncMatches(apiMatches) {
   return mapped;
 }
 
-async function updateRanking() {
-  const [usersSnapshot, predictionsSnapshot, matchesSnapshot] = await Promise.all([
-    db.collection("users").get(),
-    db.collection("predictions").get(),
-    db.collection("matches").get()
-  ]);
-
-  const users = usersSnapshot.docs.map((item) => ({
-    ...item.data(),
-    uid: item.data().uid || item.id
-  }));
-  const predictions = predictionsSnapshot.docs
-    .map((item) => item.data())
-    .filter((prediction) => prediction.uid && prediction.matchId);
-  const matches = new Map(matchesSnapshot.docs.map((item) => [item.id, item.data()]));
-  const ranking = buildRanking(users, predictions, matches);
-
-  for (let offset = 0; offset < ranking.length; offset += 400) {
-    const batch = db.batch();
-    ranking.slice(offset, offset + 400).forEach((entry) => {
-      batch.set(db.collection("rankings").doc(entry.uid), {
-        ...entry,
-        updatedAt: FieldValue.serverTimestamp()
-      });
-    });
-    await batch.commit();
-  }
-
-  return ranking.length;
-}
-
 const apiMatches = await fetchOfficialMatches();
 const mappedMatches = await syncMatches(apiMatches);
-const rankedUsers = await updateRanking();
+const ranking = await updateRanking(db);
 
 console.log(
-  `Sincronização concluída: ${mappedMatches.length} jogos mapeados e ${rankedUsers} usuários ranqueados.`
+  `Sincronização concluída: ${mappedMatches.length} jogos mapeados e ${ranking.length} usuários ranqueados.`
 );

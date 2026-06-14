@@ -3,3 +3,4 @@ import "./tests/storage.test.mjs";
 import "./tests/scoring.test.mjs";
 import "./tests/ranking.test.mjs";
 import "./tests/worldcup-api.test.mjs";
+import "./tests/admin-prediction-options.test.mjs";

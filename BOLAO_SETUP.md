@@ -39,3 +39,29 @@ O Firestore usa estas coleções:
 - `matches`: horários e resultados oficiais, gravados pelo job.
 - `predictions`: palpites confirmados, privados por usuário.
 - `rankings`: ranking geral, somente leitura no navegador.
+
+## Ajustar um palpite passado
+
+Use a ferramenta administrativa somente quando houver uma justificativa válida
+para registrar ou corrigir um palpite após o prazo. O ajuste fica marcado no
+documento com data e justificativa, e o ranking é recalculado automaticamente.
+
+Listar usuários:
+
+```powershell
+npm run admin:prediction -- list-users --service-account "C:\caminho\service-account.json"
+```
+
+Listar partidas encerradas e seus identificadores:
+
+```powershell
+npm run admin:prediction -- list-matches --service-account "C:\caminho\service-account.json"
+```
+
+Registrar ou corrigir um palpite:
+
+```powershell
+npm run admin:prediction -- set --service-account "C:\caminho\service-account.json" --email "usuario@email.com" --match A-0 --score 2x1 --reason "Palpite informado antes da partida"
+```
+
+Essa ferramenta usa o Firebase Admin e não deve ser exposta na interface web.
