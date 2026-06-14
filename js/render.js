@@ -365,13 +365,28 @@ export function renderRanking(ranking, currentUid) {
       ? `<img class="ranking-avatar" src="${escapeHtml(entry.photoURL)}" alt="" referrerpolicy="no-referrer">`
       : `<span class="ranking-avatar fallback" aria-hidden="true">${safeName.charAt(0).toUpperCase()}</span>`;
 
-    return `<div class="ranking-row ${isCurrentUser ? "current-user" : ""}">
-      <strong class="ranking-position">${entry.position}º</strong>
-      <div class="ranking-person">${photo}<span>${safeName}${isCurrentUser ? " (você)" : ""}</span></div>
-      <strong>${entry.points || 0}</strong>
-      <span>${entry.exactHits || 0}</span>
-      <span>${entry.outcomeHits || 0}</span>
-    </div>`;
+    const details = Array.isArray(entry.details) ? entry.details : [];
+    const detailRows = details.length
+      ? details.map(renderRankingDetail).join("")
+      : `<p class="ranking-no-details">Nenhuma partida avaliada até agora.</p>`;
+
+    return `<details class="ranking-entry ${isCurrentUser ? "current-user" : ""}">
+      <summary class="ranking-row">
+        <strong class="ranking-position">${entry.position}º</strong>
+        <div class="ranking-person">${photo}<span>${safeName}${isCurrentUser ? " (você)" : ""}</span></div>
+        <strong>${entry.points || 0}</strong>
+        <span>${entry.exactHits || 0}</span>
+        <span>${entry.outcomeHits || 0}</span>
+        <span class="ranking-expand" aria-hidden="true"></span>
+      </summary>
+      <div class="ranking-details">
+        <div class="ranking-details-head">
+          <strong>Desempenho por partida</strong>
+          <span>${details.length} palpite${details.length === 1 ? "" : "s"} avaliado${details.length === 1 ? "" : "s"}</span>
+        </div>
+        ${detailRows}
+      </div>
+    </details>`;
   }).join("");
 
   return {
@@ -379,6 +394,31 @@ export function renderRanking(ranking, currentUid) {
     empty: false,
     meta: `${ranking.length} participante${ranking.length === 1 ? "" : "s"}`
   };
+}
+
+function renderRankingDetail(detail) {
+  const labels = {
+    exact: "Placar exato",
+    outcome: "Resultado correto",
+    miss: "Errou"
+  };
+  const safeHome = escapeHtml(detail.home || "");
+  const safeAway = escapeHtml(detail.away || "");
+  const type = ["exact", "outcome", "miss"].includes(detail.type)
+    ? detail.type
+    : "miss";
+
+  return `<div class="ranking-detail result-${type}">
+    <div class="ranking-detail-match">
+      <strong>${safeHome} x ${safeAway}</strong>
+      <span>Seu palpite: ${detail.predictedHomeScore} x ${detail.predictedAwayScore}</span>
+    </div>
+    <div class="ranking-detail-result">
+      <span>Resultado oficial</span>
+      <strong>${detail.actualHomeScore} x ${detail.actualAwayScore}</strong>
+    </div>
+    <span class="ranking-detail-status">${labels[type]} · ${detail.points} pts</span>
+  </div>`;
 }
 
 function escapeHtml(value) {

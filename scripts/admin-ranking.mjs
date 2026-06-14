@@ -1,11 +1,17 @@
 import { FieldValue } from "firebase-admin/firestore";
-import { buildRanking } from "../js/ranking.js";
+import { buildRanking, buildRankingDetails } from "../js/ranking.js";
 
 export async function updateRanking(db) {
-  const [usersSnapshot, predictionsSnapshot, matchesSnapshot] = await Promise.all([
+  const [
+    usersSnapshot,
+    predictionsSnapshot,
+    matchesSnapshot,
+    existingRankingSnapshot
+  ] = await Promise.all([
     db.collection("users").get(),
     db.collection("predictions").get(),
-    db.collection("matches").get()
+    db.collection("matches").get(),
+    db.collection("rankings").get()
   ]);
 
   const users = usersSnapshot.docs.map((item) => ({
@@ -19,14 +25,29 @@ export async function updateRanking(db) {
     matchesSnapshot.docs.map((item) => [item.id, item.data()])
   );
   const ranking = buildRanking(users, predictions, matches);
+  const details = buildRankingDetails(predictions, matches);
 
   for (let offset = 0; offset < ranking.length; offset += 400) {
     const batch = db.batch();
     ranking.slice(offset, offset + 400).forEach((entry) => {
       batch.set(db.collection("rankings").doc(entry.uid), {
         ...entry,
+        details: details.get(entry.uid) || [],
         updatedAt: FieldValue.serverTimestamp()
       });
+    });
+    await batch.commit();
+  }
+
+  const activeUids = new Set(ranking.map((entry) => entry.uid));
+  const staleDocuments = existingRankingSnapshot.docs.filter(
+    (item) => !activeUids.has(item.id)
+  );
+
+  for (let offset = 0; offset < staleDocuments.length; offset += 400) {
+    const batch = db.batch();
+    staleDocuments.slice(offset, offset + 400).forEach((item) => {
+      batch.delete(item.ref);
     });
     await batch.commit();
   }

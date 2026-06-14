@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildRanking } from "../js/ranking.js";
+import { buildRanking, buildRankingDetails } from "../js/ranking.js";
 
 test("ranking soma pontos e desempata por placares exatos", () => {
   const users = [
@@ -44,4 +44,56 @@ test("ranking ignora registros sem identificador de usuário", () => {
   );
 
   assert.deepEqual(ranking, []);
+});
+
+test("detalhes públicos incluem somente palpites de partidas encerradas", () => {
+  const predictions = [
+    {
+      uid: "ana",
+      matchId: "A-0",
+      home: "México",
+      away: "África do Sul",
+      homeScore: 2,
+      awayScore: 0
+    },
+    {
+      uid: "ana",
+      matchId: "A-1",
+      home: "Coreia do Sul",
+      away: "Tchéquia",
+      homeScore: 1,
+      awayScore: 0
+    }
+  ];
+  const matches = new Map([
+    ["A-0", {
+      status: "FINISHED",
+      home: "México",
+      away: "África do Sul",
+      homeScore: 2,
+      awayScore: 0
+    }],
+    ["A-1", {
+      status: "SCHEDULED",
+      home: "Coreia do Sul",
+      away: "Tchéquia",
+      homeScore: null,
+      awayScore: null
+    }]
+  ]);
+
+  const details = buildRankingDetails(predictions, matches).get("ana");
+
+  assert.equal(details.length, 1);
+  assert.deepEqual(details[0], {
+    matchId: "A-0",
+    home: "México",
+    away: "África do Sul",
+    predictedHomeScore: 2,
+    predictedAwayScore: 0,
+    actualHomeScore: 2,
+    actualAwayScore: 0,
+    points: 3,
+    type: "exact"
+  });
 });

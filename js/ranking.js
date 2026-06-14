@@ -1,5 +1,36 @@
 import { scorePrediction } from "./scoring.js";
 
+export function buildRankingDetails(predictions, matches) {
+  const details = new Map();
+
+  predictions.forEach((prediction) => {
+    const match = matches.get(prediction.matchId);
+    if (!match || match.status !== "FINISHED") return;
+    if (!Number.isInteger(match.homeScore) || !Number.isInteger(match.awayScore)) return;
+
+    const score = scorePrediction(prediction, match);
+    const userDetails = details.get(prediction.uid) || [];
+    userDetails.push({
+      matchId: prediction.matchId,
+      home: match.home || prediction.home,
+      away: match.away || prediction.away,
+      predictedHomeScore: prediction.homeScore,
+      predictedAwayScore: prediction.awayScore,
+      actualHomeScore: match.homeScore,
+      actualAwayScore: match.awayScore,
+      points: score.points,
+      type: score.type
+    });
+    details.set(prediction.uid, userDetails);
+  });
+
+  details.forEach((items) => {
+    items.sort((a, b) => a.matchId.localeCompare(b.matchId));
+  });
+
+  return details;
+}
+
 export function buildRanking(users, predictions, matches) {
   const entries = new Map();
 
