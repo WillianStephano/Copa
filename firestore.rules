@@ -60,5 +60,10 @@ service cloud.firestore {
       allow read: if signedIn();
       allow write: if false;
     }
+
+    match /matchPredictionSummaries/{matchId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
   }
 }

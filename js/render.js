@@ -83,6 +83,95 @@ function renderOfficialResult(officialMatch, prediction, home, away) {
   </div>`;
 }
 
+function renderMatchPredictionPanel(summary, officialMatch, home, away) {
+  const locked = officialMatch?.kickoffDate ? isPredictionLocked(officialMatch.kickoffDate) : false;
+
+  if (!summary) {
+    const message = !officialMatch?.kickoffDate
+      ? "Assim que o horário oficial for sincronizado, os palpites aparecem após o fechamento."
+      : locked
+        ? "O jogo já travou. Estamos aguardando a próxima sincronização para liberar os palpites."
+        : "Os palpites dos outros participantes ficam ocultos até 30 minutos antes do jogo.";
+
+    return `<div class="match-predictions-panel is-private">
+      <div class="match-predictions-head">
+        <div>
+          <strong>Palpites do bolão</strong>
+          <span>${message}</span>
+        </div>
+        <span class="privacy-pill">${locked ? "Sincronizando" : "Protegido"}</span>
+      </div>
+    </div>`;
+  }
+
+  const predictions = Array.isArray(summary.predictions) ? summary.predictions : [];
+  const total = Number(summary.totalPredictions) || predictions.length;
+  const safeHome = escapeHtml(summary.home || home);
+  const safeAway = escapeHtml(summary.away || away);
+  const tally = [
+    ["home", safeHome, summary.homeWinPredictions || 0],
+    ["draw", "Empate", summary.drawPredictions || 0],
+    ["away", safeAway, summary.awayWinPredictions || 0]
+  ].map(([choice, label, count]) => `
+    <span class="prediction-tally-item choice-${choice}">
+      <strong>${count}</strong>
+      <span>${label}</span>
+    </span>
+  `).join("");
+  const rows = predictions.length
+    ? predictions.map(renderPublicPrediction).join("")
+    : `<p class="public-predictions-empty">Jogo travado, mas ninguém confirmou palpite para esta partida.</p>`;
+
+  return `<div class="match-predictions-panel">
+    <div class="match-predictions-head">
+      <div>
+        <strong>Palpites do bolão</strong>
+        <span>${total} participante${total === 1 ? "" : "s"} com palpite liberado</span>
+      </div>
+      <span class="privacy-pill open">Liberado</span>
+    </div>
+    <div class="prediction-tally" aria-label="Resumo dos palpites desta partida">
+      ${tally}
+    </div>
+    <div class="public-predictions-list">
+      ${rows}
+    </div>
+  </div>`;
+}
+
+function renderPublicPrediction(prediction) {
+  const name = prediction.displayName || "Participante";
+  const safeName = escapeHtml(name);
+  const safeChoice = escapeHtml(prediction.choiceLabel || "Palpite confirmado");
+  const choice = ["home", "draw", "away"].includes(prediction.choice)
+    ? prediction.choice
+    : "draw";
+  const resultType = ["exact", "outcome", "miss", "pending"].includes(prediction.type)
+    ? prediction.type
+    : "pending";
+  const statusLabels = {
+    exact: "Placar exato",
+    outcome: "Resultado correto",
+    miss: "Errou",
+    pending: "Aguardando resultado"
+  };
+  const pointsLabel = resultType === "pending"
+    ? "Ainda sem pontuação"
+    : `${prediction.points || 0} pts`;
+
+  return `<div class="public-prediction choice-${choice} result-${resultType}">
+    <div class="public-prediction-person">
+      ${renderPersonAvatar(name, prediction.photoURL, "public-prediction-avatar")}
+      <span>${safeName}</span>
+    </div>
+    <div class="public-prediction-score">
+      <strong>${prediction.homeScore} x ${prediction.awayScore}</strong>
+      <span>${safeChoice}</span>
+    </div>
+    <span class="public-prediction-status">${statusLabels[resultType]} · ${pointsLabel}</span>
+  </div>`;
+}
+
 export function renderStandingsTable(standings, groupId, collapsed = false) {
   return `<div class="table-wrap ${collapsed ? "collapsed" : ""}" id="table-${groupId}">
     <table>
@@ -137,8 +226,11 @@ export function renderGroupCard(
       home,
       away
     );
+    const publicPredictionsHtml = state.todayOnly
+      ? renderMatchPredictionPanel(state.matchPredictionSummaries?.[id], officialMatch, home, away)
+      : "";
 
-    return `<div class="match-block ${confirmedPrediction ? "has-confirmed-prediction" : ""} ${officialResultHtml ? "has-official-result" : ""}">
+    return `<div class="match-block ${confirmedPrediction ? "has-confirmed-prediction" : ""} ${officialResultHtml ? "has-official-result" : ""} ${publicPredictionsHtml ? "has-public-predictions" : ""}">
       <div class="match-row ${completed ? "completed" : ""}">
         <span class="match-date">${date}</span>
         ${renderTeam(home, homeClasses)}
@@ -149,6 +241,7 @@ export function renderGroupCard(
         ${renderTeam(away, awayClasses)}
       </div>
       ${officialResultHtml}
+      ${publicPredictionsHtml}
       <div class="prediction-actions">
         <span class="prediction-deadline ${locked ? "locked" : ""}">${deadlineText}</span>
         <button class="confirm-prediction ${confirmedMatchesDraft ? "confirmed" : ""}" type="button" data-confirm-prediction="${id}" ${!officialMatch?.kickoffDate || locked || !completed || confirmedMatchesDraft ? "disabled" : ""}>${buttonLabel}</button>
@@ -366,6 +459,9 @@ export function renderRanking(ranking, currentUid) {
       : `<span class="ranking-avatar fallback" aria-hidden="true">${safeName.charAt(0).toUpperCase()}</span>`;
 
     const details = Array.isArray(entry.details) ? entry.details : [];
+    const exactCount = details.filter((detail) => detail.type === "exact").length;
+    const outcomeCount = details.filter((detail) => detail.type === "outcome").length;
+    const missCount = details.filter((detail) => detail.type === "miss").length;
     const detailRows = details.length
       ? details.map(renderRankingDetail).join("")
       : `<p class="ranking-no-details">Nenhuma partida avaliada até agora.</p>`;
@@ -381,8 +477,15 @@ export function renderRanking(ranking, currentUid) {
       </summary>
       <div class="ranking-details">
         <div class="ranking-details-head">
-          <strong>Desempenho por partida</strong>
-          <span>${details.length} palpite${details.length === 1 ? "" : "s"} avaliado${details.length === 1 ? "" : "s"}</span>
+          <div>
+            <strong>Desempenho por partida</strong>
+            <span>Somente jogos encerrados entram nesta visão.</span>
+          </div>
+          <div class="ranking-details-pills">
+            <span class="result-exact">${exactCount} exato${exactCount === 1 ? "" : "s"}</span>
+            <span class="result-outcome">${outcomeCount} resultado${outcomeCount === 1 ? "" : "s"}</span>
+            <span class="result-miss">${missCount} erro${missCount === 1 ? "" : "s"}</span>
+          </div>
         </div>
         ${detailRows}
       </div>
@@ -411,7 +514,7 @@ function renderRankingDetail(detail) {
   return `<div class="ranking-detail result-${type}">
     <div class="ranking-detail-match">
       <strong>${safeHome} x ${safeAway}</strong>
-      <span>Seu palpite: ${detail.predictedHomeScore} x ${detail.predictedAwayScore}</span>
+      <span>Palpite: ${detail.predictedHomeScore} x ${detail.predictedAwayScore}</span>
     </div>
     <div class="ranking-detail-result">
       <span>Resultado oficial</span>
@@ -419,6 +522,14 @@ function renderRankingDetail(detail) {
     </div>
     <span class="ranking-detail-status">${labels[type]} · ${detail.points} pts</span>
   </div>`;
+}
+
+function renderPersonAvatar(name, photoURL, className) {
+  if (photoURL) {
+    return `<img class="${className}" src="${escapeHtml(photoURL)}" alt="" referrerpolicy="no-referrer">`;
+  }
+
+  return `<span class="${className} fallback" aria-hidden="true">${escapeHtml(name.charAt(0).toUpperCase() || "P")}</span>`;
 }
 
 function escapeHtml(value) {

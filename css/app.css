@@ -763,6 +763,210 @@
       background: rgba(232, 246, 239, 0.52);
     }
 
+    .match-predictions-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-top: 1px solid rgba(220, 233, 228, 0.9);
+      background:
+        linear-gradient(135deg, rgba(232, 246, 239, 0.96), rgba(255, 255, 255, 0.88)),
+        radial-gradient(circle at top right, rgba(245, 197, 66, 0.18), transparent 42%);
+    }
+
+    .match-predictions-panel.is-private {
+      background: linear-gradient(135deg, rgba(244, 251, 247, 0.96), rgba(237, 241, 239, 0.84));
+    }
+
+    .match-predictions-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .match-predictions-head div {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .match-predictions-head strong {
+      color: var(--green-900);
+      font-size: 0.86rem;
+    }
+
+    .match-predictions-head span {
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+
+    .privacy-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: #e4ebe8;
+      font-size: 0.68rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .privacy-pill.open {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .prediction-tally {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .prediction-tally-item {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      padding: 8px;
+      border: 1px solid rgba(220, 233, 228, 0.9);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .prediction-tally-item strong {
+      color: var(--green-900);
+      font-family: var(--font-score);
+      font-size: 1.05rem;
+    }
+
+    .prediction-tally-item span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .prediction-tally-item.choice-draw {
+      background: rgba(245, 197, 66, 0.16);
+    }
+
+    .public-predictions-list {
+      display: grid;
+      gap: 7px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .public-prediction {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.9fr) minmax(90px, 0.7fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid rgba(220, 233, 228, 0.9);
+      border-left: 4px solid var(--green-700);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .public-prediction.choice-away {
+      border-left-color: var(--blue-700);
+    }
+
+    .public-prediction.choice-draw {
+      border-left-color: var(--gold-500);
+    }
+
+    .public-prediction-person {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+      font-weight: 900;
+    }
+
+    .public-prediction-person span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .public-prediction-avatar {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      object-fit: cover;
+      color: var(--white);
+      background: var(--green-700);
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+
+    .public-prediction-score {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .public-prediction-score strong {
+      color: var(--green-900);
+      font-family: var(--font-score);
+    }
+
+    .public-prediction-score span {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .public-prediction-status {
+      justify-self: end;
+      padding: 6px 8px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: #e8eeeb;
+      font-size: 0.66rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .public-prediction.result-exact .public-prediction-status {
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.5);
+    }
+
+    .public-prediction.result-outcome .public-prediction-status {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .public-prediction.result-miss .public-prediction-status {
+      color: #8f242a;
+      background: #ffe0e1;
+    }
+
+    .public-predictions-empty {
+      margin: 0;
+      padding: 10px;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.62);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
     .official-result {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1021,6 +1225,16 @@
       background: #fff7c7;
     }
 
+    .ranking-entry[open] {
+      background:
+        linear-gradient(180deg, rgba(232, 246, 239, 0.72), rgba(255, 255, 255, 0.94));
+    }
+
+    .ranking-entry.current-user[open] {
+      background:
+        linear-gradient(180deg, rgba(255, 247, 199, 0.96), rgba(255, 255, 255, 0.94));
+    }
+
     .ranking-row {
       cursor: pointer;
       list-style: none;
@@ -1054,23 +1268,69 @@
 
     .ranking-details {
       display: grid;
-      gap: 8px;
-      padding: 12px 16px 16px 118px;
-      background: rgba(244, 251, 247, 0.88);
+      gap: 10px;
+      padding: 14px 16px 18px 118px;
+      border-top: 1px solid rgba(220, 233, 228, 0.9);
+      background:
+        linear-gradient(135deg, rgba(244, 251, 247, 0.96), rgba(255, 255, 255, 0.9)),
+        radial-gradient(circle at top right, rgba(245, 197, 66, 0.15), transparent 40%);
       animation: revealTable 180ms ease both;
     }
 
     .ranking-details-head {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
+      align-items: start;
       color: var(--green-900);
       font-size: 0.78rem;
+    }
+
+    .ranking-details-head > div:first-child {
+      display: grid;
+      gap: 3px;
+    }
+
+    .ranking-details-head strong {
+      font-size: 0.86rem;
     }
 
     .ranking-details-head span,
     .ranking-no-details {
       color: var(--muted);
+    }
+
+    .ranking-details-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ranking-details-pills span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .ranking-details-pills .result-exact {
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.5);
+    }
+
+    .ranking-details-pills .result-outcome {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .ranking-details-pills .result-miss {
+      color: #8f242a;
+      background: #ffe0e1;
     }
 
     .ranking-no-details {
@@ -1087,15 +1347,18 @@
       border: 1px solid var(--line);
       border-left: 4px solid var(--red-600);
       border-radius: 7px;
-      background: var(--white);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 8px 18px rgba(18, 33, 30, 0.05);
     }
 
     .ranking-detail.result-exact {
       border-left-color: var(--gold-500);
+      background: linear-gradient(90deg, #fff8d8, rgba(255, 255, 255, 0.92));
     }
 
     .ranking-detail.result-outcome {
       border-left-color: var(--green-700);
+      background: linear-gradient(90deg, var(--mint-100), rgba(255, 255, 255, 0.92));
     }
 
     .ranking-detail-match,
@@ -1446,6 +1709,28 @@
 
       .official-result {
         grid-template-columns: 1fr auto;
+      }
+
+      .match-predictions-head,
+      .ranking-details-head {
+        display: grid;
+      }
+
+      .prediction-tally {
+        grid-template-columns: 1fr;
+      }
+
+      .public-prediction {
+        grid-template-columns: 1fr;
+      }
+
+      .public-prediction-status,
+      .ranking-detail-status {
+        justify-self: start;
+      }
+
+      .ranking-details-pills {
+        justify-content: flex-start;
       }
 
       .prediction-verdict {

@@ -15,6 +15,7 @@ import {
 } from "./render.js";
 import {
   confirmPrediction,
+  subscribeToMatchPredictionSummaries,
   subscribeToOfficialMatches,
   subscribeToPredictions,
   subscribeToRanking
@@ -29,6 +30,7 @@ const state = {
   expandedGroups: new Set(),
   user: null,
   predictions: {},
+  matchPredictionSummaries: {},
   officialMatches: {},
   ranking: []
 };
@@ -36,6 +38,7 @@ const state = {
 let unsubscribePredictions = null;
 let unsubscribeMatches = null;
 let unsubscribeRanking = null;
+let unsubscribeMatchPredictionSummaries = null;
 
 const els = {
   tabs: document.querySelectorAll("[data-tab]"),
@@ -293,9 +296,11 @@ subscribeToAuth((user) => {
   unsubscribePredictions?.();
   unsubscribeMatches?.();
   unsubscribeRanking?.();
+  unsubscribeMatchPredictionSummaries?.();
 
   state.user = user;
   state.predictions = {};
+  state.matchPredictionSummaries = {};
   state.officialMatches = {};
   state.ranking = [];
 
@@ -327,6 +332,11 @@ subscribeToAuth((user) => {
 
   unsubscribeRanking = subscribeToRanking((ranking) => {
     state.ranking = ranking;
+    renderAll();
+  }, handleSyncError);
+
+  unsubscribeMatchPredictionSummaries = subscribeToMatchPredictionSummaries((summaries) => {
+    state.matchPredictionSummaries = summaries;
     renderAll();
   }, handleSyncError);
 });

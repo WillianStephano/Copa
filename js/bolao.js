@@ -61,6 +61,14 @@ export function subscribeToRanking(callback, onError) {
   );
 }
 
+export function subscribeToMatchPredictionSummaries(callback, onError) {
+  return onSnapshot(
+    collection(db, "matchPredictionSummaries"),
+    (snapshot) => callback(snapshotToMap(snapshot, "matchId")),
+    onError
+  );
+}
+
 export async function confirmPrediction({ user, officialMatch, groupId, index, home, away, homeScore, awayScore }) {
   if (!user) throw new Error("Faça login para confirmar o palpite.");
   if (!officialMatch?.kickoffDate) throw new Error("O horário oficial deste jogo ainda não foi sincronizado.");
