@@ -19,6 +19,47 @@ export function getMatchVenue(groupId, index) {
   return matchVenues[`${groupId}:${index}`] || null;
 }
 
+export function renderSyncStatus(status) {
+  if (!status) return "Resultados ainda sem status de sincronização";
+
+  const sourceLabels = {
+    "api-football": "API-Football",
+    "worldcup26.ir": "worldcup26.ir"
+  };
+  const lastSuccess = formatSyncDate(status.lastSuccessfulAt);
+  const lastFailure = formatSyncDate(status.lastFailedAt);
+
+  if (status.status === "success" && lastSuccess) {
+    return `Resultados atualizados às ${lastSuccess} · fonte: ${sourceLabels[status.source] || status.source || "automática"}`;
+  }
+
+  if (status.status === "skipped" && lastSuccess) {
+    return `Resultados atualizados às ${lastSuccess} · próxima busca perto dos jogos`;
+  }
+
+  if (status.status === "failed") {
+    return lastSuccess
+      ? `Resultados atualizados às ${lastSuccess} · última tentativa falhou ${lastFailure ? `às ${lastFailure}` : ""}`.trim()
+      : "Última tentativa de atualizar resultados falhou";
+  }
+
+  return lastSuccess
+    ? `Resultados atualizados às ${lastSuccess}`
+    : "Resultados aguardando primeira sincronização";
+}
+
+function formatSyncDate(value) {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+
+  return value.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 export function renderGroupFilter(state) {
   const todayCount = Object.values(state.officialMatches).filter((match) =>
     isMatchToday(match)

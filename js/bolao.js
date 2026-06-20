@@ -69,6 +69,29 @@ export function subscribeToMatchPredictionSummaries(callback, onError) {
   );
 }
 
+export function subscribeToSyncStatus(callback, onError) {
+  return onSnapshot(
+    doc(db, "syncStatus", "results"),
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        callback(null);
+        return;
+      }
+
+      const data = snapshot.data();
+      callback({
+        id: snapshot.id,
+        ...data,
+        updatedAt: timestampToDate(data.updatedAt),
+        checkedAt: timestampToDate(data.checkedAt),
+        lastSuccessfulAt: timestampToDate(data.lastSuccessfulAt),
+        lastFailedAt: timestampToDate(data.lastFailedAt)
+      });
+    },
+    onError
+  );
+}
+
 export async function confirmPrediction({ user, officialMatch, groupId, index, home, away, homeScore, awayScore }) {
   if (!user) throw new Error("Faça login para confirmar o palpite.");
   if (!officialMatch?.kickoffDate) throw new Error("O horário oficial deste jogo ainda não foi sincronizado.");

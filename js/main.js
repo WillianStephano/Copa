@@ -11,14 +11,16 @@ import {
   renderOverview,
   renderRanking,
   renderSimulator,
-  renderStandings
+  renderStandings,
+  renderSyncStatus
 } from "./render.js";
 import {
   confirmPrediction,
   subscribeToMatchPredictionSummaries,
   subscribeToOfficialMatches,
   subscribeToPredictions,
-  subscribeToRanking
+  subscribeToRanking,
+  subscribeToSyncStatus
 } from "./bolao.js";
 import { buildTodayPredictionsMessage } from "./share-predictions.js";
 
@@ -32,6 +34,7 @@ const state = {
   predictions: {},
   matchPredictionSummaries: {},
   officialMatches: {},
+  syncStatus: null,
   ranking: []
 };
 
@@ -39,6 +42,7 @@ let unsubscribePredictions = null;
 let unsubscribeMatches = null;
 let unsubscribeRanking = null;
 let unsubscribeMatchPredictionSummaries = null;
+let unsubscribeSyncStatus = null;
 
 const els = {
   tabs: document.querySelectorAll("[data-tab]"),
@@ -99,13 +103,14 @@ function showToast(message) {
 function renderAll() {
   const simulatedStandings = calculateStandings();
   const officialStandings = calculateOfficialStandings(state.officialMatches);
+  const syncStatusText = renderSyncStatus(state.syncStatus);
   const groupFilterHtml = renderGroupFilter(state);
   els.groupFilter.innerHTML = groupFilterHtml;
 
   const overview = renderOverview(state, officialStandings);
   els.dashboardMetrics.innerHTML = overview.metrics;
   els.leadersGrid.innerHTML = overview.leaders;
-  els.overviewMeta.textContent = overview.meta;
+  els.overviewMeta.textContent = `${overview.meta} · ${syncStatusText}`;
   els.heroGroups.textContent = overview.heroGroups;
   els.heroTeams.textContent = overview.heroTeams;
   els.heroFilled.textContent = overview.heroFilled;
@@ -114,17 +119,17 @@ function renderAll() {
   els.groupsGrid.innerHTML = simulator.html;
   els.simulatorEmpty.classList.toggle("active", simulator.empty);
   els.simulatorEmpty.textContent = simulator.emptyMessage;
-  els.simulatorMeta.textContent = simulator.meta;
+  els.simulatorMeta.textContent = `${simulator.meta} · ${syncStatusText}`;
 
   const standingsView = renderStandings(state, officialStandings);
   els.standingsGrid.innerHTML = standingsView.html;
   els.standingsEmpty.classList.toggle("active", standingsView.empty);
-  els.standingsMeta.textContent = standingsView.meta;
+  els.standingsMeta.textContent = `${standingsView.meta} · ${syncStatusText}`;
 
   const calendar = renderCalendar(state);
   els.calendarList.innerHTML = calendar.html;
   els.calendarEmpty.classList.toggle("active", calendar.empty);
-  els.calendarMeta.textContent = calendar.meta;
+  els.calendarMeta.textContent = `${calendar.meta} · ${syncStatusText}`;
 
   const rankingView = renderRanking(state.ranking, state.user?.uid);
   els.rankingList.innerHTML = rankingView.html;
@@ -297,11 +302,13 @@ subscribeToAuth((user) => {
   unsubscribeMatches?.();
   unsubscribeRanking?.();
   unsubscribeMatchPredictionSummaries?.();
+  unsubscribeSyncStatus?.();
 
   state.user = user;
   state.predictions = {};
   state.matchPredictionSummaries = {};
   state.officialMatches = {};
+  state.syncStatus = null;
   state.ranking = [];
 
   if (!user) {
@@ -337,6 +344,11 @@ subscribeToAuth((user) => {
 
   unsubscribeMatchPredictionSummaries = subscribeToMatchPredictionSummaries((summaries) => {
     state.matchPredictionSummaries = summaries;
+    renderAll();
+  }, handleSyncError);
+
+  unsubscribeSyncStatus = subscribeToSyncStatus((syncStatus) => {
+    state.syncStatus = syncStatus;
     renderAll();
   }, handleSyncError);
 });

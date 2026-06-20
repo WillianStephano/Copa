@@ -93,6 +93,10 @@ Object.entries(groups).forEach(([groupId, group]) => {
   });
 });
 
+export function findLocalMatch(home, away) {
+  return localMatches.get(matchPairKey(home, away)) || null;
+}
+
 export function canonicalTeam(apiName) {
   const apiKey = normalizeTeamName(apiName);
   return localTeamByKey.get(TEAM_ALIASES[apiKey] || apiKey) || null;
