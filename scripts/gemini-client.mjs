@@ -34,7 +34,7 @@ export async function generateGeminiText({
         maxOutputTokens: 512,
         responseFormat: {
           text: {
-            mimeType: "application/json",
+            mimeType: "APPLICATION_JSON",
             schema: {
               type: "object",
               properties: {

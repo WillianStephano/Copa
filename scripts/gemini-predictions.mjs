@@ -212,12 +212,14 @@ if (!options["dry-run"] && results.some((item) => item.saved)) {
   await updateRanking(db);
 }
 
-console.table(results.map((item) => ({
-  jogo: item.matchId,
-  palpite: item.home ? `${item.home} ${item.homeScore} x ${item.awayScore} ${item.away}` : "-",
-  status: item.saved ? "salvo" : item.dryRun ? "simulado" : `ignorado: ${item.reason}`,
-  erro: item.error || ""
-})));
+for (const item of results) {
+  const prediction = item.home
+    ? `${item.home} ${item.homeScore} x ${item.awayScore} ${item.away}`
+    : "-";
+  const status = item.saved ? "salvo" : item.dryRun ? "simulado" : `ignorado: ${item.reason}`;
+  console.log(`[${item.matchId}] ${status} | ${prediction}`);
+  if (item.error) console.log(`  erro: ${item.error}`);
+}
 
 const fatalErrors = results.filter((item) => item.reason === "gemini-error");
 if (fatalErrors.length === results.length) {
