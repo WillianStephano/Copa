@@ -5,6 +5,7 @@ import "./tests/ranking.test.mjs";
 import "./tests/worldcup-api.test.mjs";
 import "./tests/api-football.test.mjs";
 import "./tests/sync-policy.test.mjs";
+import "./tests/result-status.test.mjs";
 import "./tests/admin-prediction-options.test.mjs";
 import "./tests/match-date.test.mjs";
 import "./tests/share-predictions.test.mjs";

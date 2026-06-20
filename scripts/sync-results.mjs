@@ -7,6 +7,7 @@ import {
   mapApiFootballFixture
 } from "./api-football.mjs";
 import { updateRanking } from "./admin-ranking.mjs";
+import { normalizeResultStatus } from "./result-status.mjs";
 import { shouldSyncResults } from "./sync-policy.mjs";
 import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
 
@@ -53,7 +54,8 @@ async function syncMatches(mappedMatches) {
   const batch = db.batch();
 
   mappedMatches.forEach((mappedMatch) => {
-    const { kickoff, lockAt, ...matchData } = mappedMatch;
+    const normalizedMatch = normalizeResultStatus(mappedMatch);
+    const { kickoff, lockAt, ...matchData } = normalizedMatch;
     const data = {
       kickoffAt: Timestamp.fromDate(kickoff),
       lockAt: Timestamp.fromDate(lockAt),

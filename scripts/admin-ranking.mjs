@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { buildMatchPredictionSummaries } from "../js/match-prediction-summaries.js";
 import { buildRanking, buildRankingDetails } from "../js/ranking.js";
+import { normalizeResultStatus } from "./result-status.mjs";
 
 export async function updateRanking(db) {
   const [
@@ -24,12 +25,32 @@ export async function updateRanking(db) {
   const predictions = predictionsSnapshot.docs
     .map((item) => item.data())
     .filter((prediction) => prediction.uid && prediction.matchId);
+  const normalizedMatches = matchesSnapshot.docs.map((item) => ({
+    id: item.id,
+    ...normalizeResultStatus(item.data())
+  }));
   const matches = new Map(
-    matchesSnapshot.docs.map((item) => [item.id, item.data()])
+    normalizedMatches.map((item) => [item.id, item])
   );
   const ranking = buildRanking(users, predictions, matches);
   const details = buildRankingDetails(predictions, matches);
   const matchSummaries = buildMatchPredictionSummaries(users, predictions, matches);
+
+  const fallbackFinalizedMatches = normalizedMatches.filter(
+    (match) => match.finalizedByFallback
+  );
+
+  for (let offset = 0; offset < fallbackFinalizedMatches.length; offset += 400) {
+    const batch = db.batch();
+    fallbackFinalizedMatches.slice(offset, offset + 400).forEach((match) => {
+      batch.set(db.collection("matches").doc(match.id), {
+        status: "FINISHED",
+        finalizedByFallback: true,
+        finalizedByFallbackAt: FieldValue.serverTimestamp()
+      }, { merge: true });
+    });
+    await batch.commit();
+  }
 
   for (let offset = 0; offset < ranking.length; offset += 400) {
     const batch = db.batch();
