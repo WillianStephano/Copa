@@ -60,7 +60,17 @@ export function parseGeminiPredictionResponse(text) {
   const end = cleaned.lastIndexOf("}");
 
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Gemini nao retornou JSON valido.");
+    const looseMatch = cleaned.match(
+      /homeScore["'\s]*[:=]\s*(\d+)[\s\S]*awayScore["'\s]*[:=]\s*(\d+)/i
+    );
+    if (!looseMatch) {
+      throw new Error("Gemini nao retornou JSON valido.");
+    }
+
+    return validatePredictionScores({
+      homeScore: Number(looseMatch[1]),
+      awayScore: Number(looseMatch[2])
+    });
   }
 
   const data = JSON.parse(cleaned.slice(start, end + 1));
@@ -69,6 +79,10 @@ export function parseGeminiPredictionResponse(text) {
     throw new Error("Gemini retornou campos extras ou incompletos.");
   }
 
+  return validatePredictionScores(data);
+}
+
+function validatePredictionScores(data) {
   const homeScore = Number(data.homeScore);
   const awayScore = Number(data.awayScore);
   if (![homeScore, awayScore].every((score) => Number.isInteger(score) && score >= 0 && score <= 6)) {

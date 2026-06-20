@@ -27,7 +27,15 @@ export async function generateGeminiText({
         topP: 0.82,
         topK: 32,
         maxOutputTokens: 80,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            homeScore: { type: "INTEGER" },
+            awayScore: { type: "INTEGER" }
+          },
+          required: ["homeScore", "awayScore"]
+        }
       }
     })
   });

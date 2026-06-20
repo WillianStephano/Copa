@@ -189,15 +189,30 @@ if (!matches.length) {
 
 const results = [];
 for (const match of matches) {
-  results.push(await predictMatch(db, match, options));
+  try {
+    results.push(await predictMatch(db, match, options));
+  } catch (error) {
+    results.push({
+      matchId: match.id,
+      skipped: true,
+      reason: "gemini-error",
+      error: error.message
+    });
+  }
 }
 
-if (!options["dry-run"]) {
+if (!options["dry-run"] && results.some((item) => item.saved)) {
   await updateRanking(db);
 }
 
 console.table(results.map((item) => ({
   jogo: item.matchId,
   palpite: item.home ? `${item.home} ${item.homeScore} x ${item.awayScore} ${item.away}` : "-",
-  status: item.saved ? "salvo" : item.dryRun ? "simulado" : `ignorado: ${item.reason}`
+  status: item.saved ? "salvo" : item.dryRun ? "simulado" : `ignorado: ${item.reason}`,
+  erro: item.error || ""
 })));
+
+const fatalErrors = results.filter((item) => item.reason === "gemini-error");
+if (fatalErrors.length === results.length) {
+  throw new Error("Gemini falhou para todos os jogos candidatos.");
+}

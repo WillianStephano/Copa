@@ -30,6 +30,13 @@ test("parser aceita apenas homeScore e awayScore", () => {
   );
 });
 
+test("parser aceita resposta quase JSON sem derrubar o workflow", () => {
+  assert.deepEqual(
+    parseGeminiPredictionResponse("homeScore: 2\nawayScore: 1"),
+    { homeScore: 2, awayScore: 1 }
+  );
+});
+
 test("parser rejeita placar fora do intervalo permitido", () => {
   assert.throws(
     () => parseGeminiPredictionResponse('{"homeScore":7,"awayScore":0}'),
