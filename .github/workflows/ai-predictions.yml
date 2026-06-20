@@ -1,0 +1,50 @@
+name: Gerar palpites da IA
+
+on:
+  workflow_dispatch:
+    inputs:
+      match:
+        description: "Jogo especifico, por exemplo D-3. Opcional."
+        required: false
+        type: string
+      force:
+        description: "Sobrescrever palpite existente da IA"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 9 * * *"
+    - cron: "0 15 * * *"
+
+concurrency:
+  group: ai-predictions
+  cancel-in-progress: false
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Gerar palpites do Gemini
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          args=()
+          if [ -n "${{ inputs.match }}" ]; then
+            args+=(--match "${{ inputs.match }}")
+          fi
+          if [ "${{ inputs.force }}" = "true" ]; then
+            args+=(--force)
+          fi
+          npm run ai:predictions -- "${args[@]}"
