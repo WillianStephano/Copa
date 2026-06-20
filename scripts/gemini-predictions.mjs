@@ -10,6 +10,7 @@ import {
   GEMINI_BOT_NAME,
   GEMINI_BOT_UID,
   buildGeminiPredictionPrompt,
+  buildGeminiRetryPrompt,
   parseGeminiPredictionResponse
 } from "./gemini-prompt.mjs";
 
@@ -111,6 +112,35 @@ function isPredictionOpen(match, now = new Date()) {
   return Boolean(lockAt && now.getTime() < lockAt.getTime());
 }
 
+async function generatePredictionWithRetry({ home, away }) {
+  const attempts = [
+    { label: "principal", prompt: buildGeminiPredictionPrompt({ home, away }) },
+    { label: "retry-json-curto", prompt: buildGeminiRetryPrompt({ home, away }) }
+  ];
+  let lastError;
+
+  for (const attempt of attempts) {
+    const text = await generateGeminiText({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+      prompt: attempt.prompt
+    });
+
+    try {
+      return {
+        ...parseGeminiPredictionResponse(text),
+        attempt: attempt.label
+      };
+    } catch (error) {
+      lastError = new Error(
+        `${error.message} Tentativa: ${attempt.label}. Resposta recebida: ${JSON.stringify(text).slice(0, 500)}`
+      );
+    }
+  }
+
+  throw lastError;
+}
+
 async function predictMatch(db, match, options) {
   if (!isPredictionOpen(match)) {
     return { matchId: match.id, skipped: true, reason: "locked" };
@@ -130,19 +160,7 @@ async function predictMatch(db, match, options) {
     return { matchId: match.id, skipped: true, reason: "missing-teams" };
   }
 
-  const prompt = buildGeminiPredictionPrompt({ home, away });
-  const text = await generateGeminiText({
-    apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
-    prompt
-  });
-  let parsedPrediction;
-  try {
-    parsedPrediction = parseGeminiPredictionResponse(text);
-  } catch (error) {
-    error.message = `${error.message} Resposta recebida: ${JSON.stringify(text).slice(0, 500)}`;
-    throw error;
-  }
+  const parsedPrediction = await generatePredictionWithRetry({ home, away });
   const { homeScore, awayScore } = parsedPrediction;
 
   if (options["dry-run"]) {
@@ -152,6 +170,7 @@ async function predictMatch(db, match, options) {
       away,
       homeScore,
       awayScore,
+      attempt: parsedPrediction.attempt,
       dryRun: true
     };
   }
@@ -171,10 +190,11 @@ async function predictMatch(db, match, options) {
     updatedAt: FieldValue.serverTimestamp(),
     isBotPrediction: true,
     botProvider: "gemini",
-    botModel: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL
+    botModel: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
+    botAttempt: parsedPrediction.attempt
   });
 
-  return { matchId: match.id, home, away, homeScore, awayScore, saved: true };
+  return { matchId: match.id, home, away, homeScore, awayScore, attempt: parsedPrediction.attempt, saved: true };
 }
 
 const options = parseArgs(process.argv.slice(2));
@@ -217,7 +237,8 @@ for (const item of results) {
     ? `${item.home} ${item.homeScore} x ${item.awayScore} ${item.away}`
     : "-";
   const status = item.saved ? "salvo" : item.dryRun ? "simulado" : `ignorado: ${item.reason}`;
-  console.log(`[${item.matchId}] ${status} | ${prediction}`);
+  const attempt = item.attempt ? ` | tentativa: ${item.attempt}` : "";
+  console.log(`[${item.matchId}] ${status} | ${prediction}${attempt}`);
   if (item.error) console.log(`  erro: ${item.error}`);
 }
 

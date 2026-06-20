@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildGeminiPredictionPrompt,
+  buildGeminiRetryPrompt,
   parseGeminiPredictionResponse
 } from "../scripts/gemini-prompt.mjs";
 
@@ -16,6 +17,17 @@ test("prompt do Gemini exige somente placar em JSON", () => {
   assert.match(prompt, /Nao inclua confidence, reason/);
   assert.match(prompt, /"homeScore": number/);
   assert.match(prompt, /"awayScore": number/);
+});
+
+test("prompt de retry do Gemini pede somente JSON curto", () => {
+  const prompt = buildGeminiRetryPrompt({
+    home: "Turquia",
+    away: "Paraguai"
+  });
+
+  assert.match(prompt, /Turquia x Paraguai/);
+  assert.match(prompt, /somente este JSON completo/);
+  assert.match(prompt, /\{"homeScore":number,"awayScore":number\}/);
 });
 
 test("parser extrai homeScore e awayScore sem salvar campos extras", () => {

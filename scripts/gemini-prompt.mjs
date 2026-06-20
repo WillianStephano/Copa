@@ -55,6 +55,15 @@ Exemplo de resposta valida:
 `.trim();
 }
 
+export function buildGeminiRetryPrompt({ home, away }) {
+  return `
+Gere um palpite conservador para ${home} x ${away}.
+Responda somente este JSON completo, em uma unica linha, sem markdown e sem texto extra:
+{"homeScore":number,"awayScore":number}
+Use numeros inteiros entre 0 e 6.
+`.trim();
+}
+
 export function parseGeminiPredictionResponse(text) {
   const cleaned = String(text ?? "")
     .trim()
