@@ -3,7 +3,7 @@ name: Sincronizar resultados do bolão
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/20 * * * *"
+    - cron: "*/5 * * * *"
 
 concurrency:
   group: sync-results
