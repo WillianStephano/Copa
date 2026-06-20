@@ -6,6 +6,7 @@ import "./tests/worldcup-api.test.mjs";
 import "./tests/api-football.test.mjs";
 import "./tests/gemini-prompt.test.mjs";
 import "./tests/gemini-client.test.mjs";
+import "./tests/ai-workflow.test.mjs";
 import "./tests/sync-policy.test.mjs";
 import "./tests/result-status.test.mjs";
 import "./tests/admin-prediction-options.test.mjs";

@@ -13,8 +13,10 @@ on:
         default: false
         type: boolean
   schedule:
-    - cron: "0 9 * * *"
-    - cron: "0 15 * * *"
+    # 06:00-23:00 em Sao Paulo, cobrindo jogos do dia sem sobrescrever palpites existentes.
+    - cron: "0 9-23 * * *"
+    # Reforco para jogos da madrugada que pertencem ao dia operacional anterior.
+    - cron: "0 0-5 * * *"
 
 concurrency:
   group: ai-predictions
@@ -40,6 +42,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY ausente. Cadastre o secret antes de gerar palpites da IA."
+            exit 1
+          fi
+
           args=()
           if [ -n "${{ inputs.match }}" ]; then
             args+=(--match "${{ inputs.match }}")
