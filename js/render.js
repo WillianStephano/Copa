@@ -494,6 +494,7 @@ export function renderRanking(ranking, currentUid) {
 
   const html = ranking.map((entry) => {
     const isCurrentUser = entry.uid === currentUid;
+    const isAiBot = entry.uid === "ai-gemini-bot";
     const safeName = escapeHtml(entry.displayName || "Participante");
     const photo = entry.photoURL
       ? `<img class="ranking-avatar" src="${escapeHtml(entry.photoURL)}" alt="" referrerpolicy="no-referrer">`
@@ -507,6 +508,13 @@ export function renderRanking(ranking, currentUid) {
       ? details.map(renderRankingDetail).join("")
       : `<p class="ranking-no-details">Nenhuma partida avaliada até agora.</p>`;
 
+    const aiEntryNote = isAiBot
+      ? `<div class="ranking-ai-note">
+          <strong>IA do Bolão entrou no bolão em 20/06, quando a menor pontuação era 27 pontos.</strong>
+          <span>A partir daqui, ela corre atrás dos humanos.</span>
+        </div>`
+      : "";
+
     return `<details class="ranking-entry ${isCurrentUser ? "current-user" : ""}">
       <summary class="ranking-row">
         <strong class="ranking-position">${entry.position}º</strong>
@@ -517,6 +525,7 @@ export function renderRanking(ranking, currentUid) {
         <span class="ranking-expand" aria-hidden="true"></span>
       </summary>
       <div class="ranking-details">
+        ${aiEntryNote}
         <div class="ranking-details-head">
           <div>
             <strong>Desempenho por partida</strong>

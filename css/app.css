@@ -1300,6 +1300,31 @@
       color: var(--muted);
     }
 
+    .ranking-ai-note {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border: 1px solid rgba(9, 92, 72, 0.16);
+      border-left: 4px solid var(--gold-500);
+      border-radius: 16px;
+      color: var(--green-900);
+      background:
+        linear-gradient(135deg, rgba(255, 248, 220, 0.82), rgba(230, 247, 239, 0.78)),
+        radial-gradient(circle at top right, rgba(245, 197, 66, 0.22), transparent 42%);
+      box-shadow: 0 10px 24px rgba(9, 92, 72, 0.08);
+    }
+
+    .ranking-ai-note strong {
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .ranking-ai-note span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
     .ranking-details-pills {
       display: flex;
       gap: 6px;
