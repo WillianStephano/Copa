@@ -18,15 +18,15 @@ test("prompt do Gemini exige somente placar em JSON", () => {
   assert.match(prompt, /"awayScore": number/);
 });
 
-test("parser aceita apenas homeScore e awayScore", () => {
+test("parser extrai homeScore e awayScore sem salvar campos extras", () => {
   assert.deepEqual(
     parseGeminiPredictionResponse('{"homeScore":1,"awayScore":1}'),
     { homeScore: 1, awayScore: 1 }
   );
 
-  assert.throws(
-    () => parseGeminiPredictionResponse('{"homeScore":1,"awayScore":1,"reason":"x"}'),
-    /campos extras/
+  assert.deepEqual(
+    parseGeminiPredictionResponse('{"homeScore":1,"awayScore":1,"reason":"x"}'),
+    { homeScore: 1, awayScore: 1 }
   );
 });
 
@@ -34,6 +34,13 @@ test("parser aceita resposta quase JSON sem derrubar o workflow", () => {
   assert.deepEqual(
     parseGeminiPredictionResponse("homeScore: 2\nawayScore: 1"),
     { homeScore: 2, awayScore: 1 }
+  );
+});
+
+test("parser aceita placar em texto quando o Gemini ignora o JSON", () => {
+  assert.deepEqual(
+    parseGeminiPredictionResponse("Turquia 1 x 0 Paraguai"),
+    { homeScore: 1, awayScore: 0 }
   );
 });
 

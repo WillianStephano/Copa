@@ -40,6 +40,8 @@ Formato de resposta obrigatorio:
 - Nao use markdown.
 - Nao inclua texto antes ou depois.
 - Nao inclua confidence, reason, comentario ou qualquer outro campo.
+- A resposta deve comecar com { e terminar com }.
+- Se quiser explicar algo, nao explique: retorne somente o JSON.
 - Os valores devem ser inteiros entre 0 e 6.
 
 Schema exato:
@@ -47,6 +49,9 @@ Schema exato:
   "homeScore": number,
   "awayScore": number
 }
+
+Exemplo de resposta valida:
+{"homeScore":1,"awayScore":1}
 `.trim();
 }
 
@@ -60,26 +65,26 @@ export function parseGeminiPredictionResponse(text) {
   const end = cleaned.lastIndexOf("}");
 
   if (start === -1 || end === -1 || end <= start) {
-    const looseMatch = cleaned.match(
-      /homeScore["'\s]*[:=]\s*(\d+)[\s\S]*awayScore["'\s]*[:=]\s*(\d+)/i
-    );
+    const looseMatch = matchLooseScore(cleaned);
     if (!looseMatch) {
       throw new Error("Gemini nao retornou JSON valido.");
     }
 
-    return validatePredictionScores({
-      homeScore: Number(looseMatch[1]),
-      awayScore: Number(looseMatch[2])
-    });
+    return validatePredictionScores(looseMatch);
   }
 
-  const data = JSON.parse(cleaned.slice(start, end + 1));
-  const keys = Object.keys(data).sort();
-  if (keys.join(",") !== "awayScore,homeScore") {
-    throw new Error("Gemini retornou campos extras ou incompletos.");
-  }
+  try {
+    const data = JSON.parse(cleaned.slice(start, end + 1));
+    if (!Object.hasOwn(data, "homeScore") || !Object.hasOwn(data, "awayScore")) {
+      throw new Error("Gemini retornou JSON sem homeScore ou awayScore.");
+    }
 
-  return validatePredictionScores(data);
+    return validatePredictionScores(data);
+  } catch (error) {
+    const looseMatch = matchLooseScore(cleaned);
+    if (looseMatch) return validatePredictionScores(looseMatch);
+    throw error;
+  }
 }
 
 function validatePredictionScores(data) {
@@ -90,4 +95,26 @@ function validatePredictionScores(data) {
   }
 
   return { homeScore, awayScore };
+}
+
+function matchLooseScore(text) {
+  const keyedMatch = text.match(
+    /homeScore["'\s]*[:=]\s*"?(\d+)"?[\s\S]*awayScore["'\s]*[:=]\s*"?(\d+)"?/i
+  );
+  if (keyedMatch) {
+    return {
+      homeScore: Number(keyedMatch[1]),
+      awayScore: Number(keyedMatch[2])
+    };
+  }
+
+  const scoreMatch = text.match(/\b(\d+)\s*[xX-]\s*(\d+)\b/);
+  if (scoreMatch) {
+    return {
+      homeScore: Number(scoreMatch[1]),
+      awayScore: Number(scoreMatch[2])
+    };
+  }
+
+  return null;
 }

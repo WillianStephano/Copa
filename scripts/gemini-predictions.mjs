@@ -136,7 +136,14 @@ async function predictMatch(db, match, options) {
     model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
     prompt
   });
-  const { homeScore, awayScore } = parseGeminiPredictionResponse(text);
+  let parsedPrediction;
+  try {
+    parsedPrediction = parseGeminiPredictionResponse(text);
+  } catch (error) {
+    error.message = `${error.message} Resposta recebida: ${JSON.stringify(text).slice(0, 500)}`;
+    throw error;
+  }
+  const { homeScore, awayScore } = parsedPrediction;
 
   if (options["dry-run"]) {
     return {

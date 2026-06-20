@@ -18,13 +18,18 @@ export async function generateGeminiText({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
+      systemInstruction: {
+        parts: [{
+          text: "Retorne exclusivamente JSON valido com homeScore e awayScore. Nao explique, nao use markdown e nao inclua outros campos."
+        }]
+      },
       contents: [{
         role: "user",
         parts: [{ text: prompt }]
       }],
       generationConfig: {
-        temperature: 0.35,
-        topP: 0.82,
+        temperature: 0.1,
+        topP: 0.7,
         topK: 32,
         maxOutputTokens: 80,
         responseMimeType: "application/json",
