@@ -31,15 +31,19 @@ export async function generateGeminiText({
         temperature: 0.1,
         topP: 0.7,
         topK: 32,
-        maxOutputTokens: 80,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            homeScore: { type: "INTEGER" },
-            awayScore: { type: "INTEGER" }
-          },
-          required: ["homeScore", "awayScore"]
+        maxOutputTokens: 512,
+        responseFormat: {
+          text: {
+            mimeType: "application/json",
+            schema: {
+              type: "object",
+              properties: {
+                homeScore: { type: "integer" },
+                awayScore: { type: "integer" }
+              },
+              required: ["homeScore", "awayScore"]
+            }
+          }
         }
       }
     })
@@ -56,7 +60,8 @@ export async function generateGeminiText({
     .trim();
 
   if (!text) {
-    throw new Error("Gemini nao retornou texto.");
+    const finishReason = payload.candidates?.[0]?.finishReason;
+    throw new Error(`Gemini nao retornou texto. Finish reason: ${finishReason || "desconhecido"}`);
   }
 
   return text;

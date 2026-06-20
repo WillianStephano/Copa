@@ -29,7 +29,8 @@ test("cliente Gemini envia prompt e extrai texto da resposta", async () => {
   assert.match(request.url, /models\/gemini-test:generateContent/);
   assert.match(request.url, /key=secret/);
   const body = JSON.parse(request.options.body);
-  assert.equal(body.generationConfig.responseMimeType, "application/json");
-  assert.deepEqual(body.generationConfig.responseSchema.required, ["homeScore", "awayScore"]);
-  assert.equal(body.generationConfig.responseSchema.properties.homeScore.type, "INTEGER");
+  assert.equal(body.generationConfig.maxOutputTokens, 512);
+  assert.equal(body.generationConfig.responseFormat.text.mimeType, "application/json");
+  assert.deepEqual(body.generationConfig.responseFormat.text.schema.required, ["homeScore", "awayScore"]);
+  assert.equal(body.generationConfig.responseFormat.text.schema.properties.homeScore.type, "integer");
 });
