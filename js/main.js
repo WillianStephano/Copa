@@ -46,7 +46,11 @@ let unsubscribeSyncStatus = null;
 
 const els = {
   tabs: document.querySelectorAll("[data-tab]"),
+  tabsNav: document.getElementById("mainTabs"),
   panels: document.querySelectorAll("[data-panel]"),
+  mobileNavToggle: document.getElementById("mobileNavToggle"),
+  mobileNavCurrent: document.getElementById("mobileNavCurrent"),
+  installAppBtn: document.getElementById("installAppBtn"),
   search: document.getElementById("globalSearch"),
   clearSearch: document.getElementById("clearSearch"),
   resetScores: document.getElementById("resetScores"),
@@ -72,6 +76,17 @@ const els = {
   toast: document.getElementById("toast")
 };
 
+const TAB_LABELS = {
+  overview: "Painel",
+  simulator: "Simulador",
+  ranking: "Ranking",
+  standings: "Classificação",
+  calendar: "Jogos",
+  rules: "Regras"
+};
+
+let deferredInstallPrompt = null;
+
 function switchTab(tabName, updateHash = true) {
   const nextTab = VALID_TABS.includes(tabName) ? tabName : "overview";
   state.activeTab = nextTab;
@@ -87,6 +102,10 @@ function switchTab(tabName, updateHash = true) {
     const active = panel.dataset.panel === nextTab;
     panel.classList.toggle("active", active);
   });
+
+  els.mobileNavCurrent.textContent = TAB_LABELS[nextTab] || "Menu";
+  els.tabsNav.classList.remove("mobile-open");
+  els.mobileNavToggle.setAttribute("aria-expanded", "false");
 
   if (updateHash && location.hash.replace("#", "") !== nextTab) {
     history.replaceState(null, "", `#${nextTab}`);
@@ -171,8 +190,39 @@ async function copyText(text) {
 
 els.resetScores.addEventListener("click", resetScoresAction);
 
+els.mobileNavToggle.addEventListener("click", () => {
+  const isOpen = els.tabsNav.classList.toggle("mobile-open");
+  els.mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
+});
+
 els.tabs.forEach((tab) => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+});
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  els.installAppBtn.hidden = false;
+});
+
+els.installAppBtn.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) {
+    showToast("Use o menu do navegador para adicionar à tela inicial.");
+    return;
+  }
+
+  els.installAppBtn.disabled = true;
+  deferredInstallPrompt.prompt();
+  const choice = await deferredInstallPrompt.userChoice.catch(() => null);
+  deferredInstallPrompt = null;
+  els.installAppBtn.hidden = true;
+  els.installAppBtn.disabled = false;
+  if (choice?.outcome === "accepted") showToast("App instalado com sucesso!");
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  els.installAppBtn.hidden = true;
 });
 
 els.groupFilter.addEventListener("click", (event) => {
@@ -352,3 +402,10 @@ subscribeToAuth((user) => {
     renderAll();
   }, handleSyncError);
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js")
+      .catch((error) => console.warn("Service worker nao registrado.", error));
+  });
+}

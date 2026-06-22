@@ -1,0 +1,20 @@
+{
+  "name": "Bolão Copa 2026",
+  "short_name": "Bolão 2026",
+  "description": "Bolão único da Copa do Mundo 2026 com palpites, resultados e ranking geral.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4fbf7",
+  "theme_color": "#075744",
+  "categories": ["sports", "entertainment"],
+  "icons": [
+    {
+      "src": "./assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

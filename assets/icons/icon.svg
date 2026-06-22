@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bolão Copa 2026">
+  <defs>
+    <linearGradient id="bg" x1="78" y1="48" x2="432" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#087057"/>
+      <stop offset="1" stop-color="#053b2f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(366 132) rotate(131) scale(292)">
+      <stop stop-color="#f5c542" stop-opacity=".82"/>
+      <stop offset=".58" stop-color="#f5c542" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#f5c542" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <path fill="#fffef8" d="M256 103c84 0 153 68 153 153s-69 153-153 153-153-68-153-153 69-153 153-153Zm0 43c-61 0-110 49-110 110s49 110 110 110 110-49 110-110-49-110-110-110Z"/>
+  <path fill="#f5c542" d="m256 164 34 54 63 15-41 50 5 64-61-24-61 24 5-64-41-50 63-15 34-54Z"/>
+  <path fill="#102a56" d="M254 218c10-6 28-5 39 3l-19 19 8 27-28-13-28 13 8-27-19-19c11-8 29-9 39-3Z"/>
+</svg>

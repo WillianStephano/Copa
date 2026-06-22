@@ -5,7 +5,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Simulador interativo da fase de grupos da Copa do Mundo 2026.">
+  <meta name="theme-color" content="#075744">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Bolão Copa 2026">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Simulador Copa do Mundo 2026</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/icons/icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -45,6 +52,7 @@
         </div>
       </div>
       <div class="userbar-actions">
+        <button class="btn secondary install-app" id="installAppBtn" type="button" hidden>Instalar app</button>
         <button class="btn logout" id="logoutBtnTop" type="button">Sair da conta</button>
       </div>
     </header>
@@ -74,7 +82,16 @@
       </div>
     </div>
 
-    <nav class="tabs" aria-label="NavegaÃ§Ã£o interna" role="tablist">
+    <div class="mobile-nav">
+      <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-expanded="false"
+        aria-controls="mainTabs">
+        <span class="mobile-nav-icon" aria-hidden="true"></span>
+        <span>Menu</span>
+      </button>
+      <span class="mobile-nav-current" id="mobileNavCurrent">Painel</span>
+    </div>
+
+    <nav class="tabs" id="mainTabs" aria-label="NavegaÃ§Ã£o interna" role="tablist">
       <button class="tab-button" role="tab" id="tab-overview" aria-controls="panel-overview" data-tab="overview"
         type="button">Painel</button>
       <button class="tab-button" role="tab" id="tab-simulator" aria-controls="panel-simulator" data-tab="simulator"
