@@ -62,6 +62,7 @@ const els = {
   rankingMeta: document.getElementById("rankingMeta"),
   calendarList: document.getElementById("calendarList"),
   leadersGrid: document.getElementById("leadersGrid"),
+  dailyLeaders: document.getElementById("dailyLeaders"),
   dashboardMetrics: document.getElementById("dashboardMetrics"),
   simulatorEmpty: document.getElementById("simulatorEmpty"),
   standingsEmpty: document.getElementById("standingsEmpty"),
@@ -128,6 +129,7 @@ function renderAll() {
 
   const overview = renderOverview(state, officialStandings);
   els.dashboardMetrics.innerHTML = overview.metrics;
+  els.dailyLeaders.innerHTML = overview.dailyLeaders;
   els.leadersGrid.innerHTML = overview.leaders;
   els.overviewMeta.textContent = `${overview.meta} · ${syncStatusText}`;
   els.heroGroups.textContent = overview.heroGroups;

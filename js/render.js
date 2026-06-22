@@ -1,4 +1,5 @@
 import { flagCodes, groups, matchVenues } from "./data.js";
+import { buildDailyRanking } from "./daily-ranking.js";
 import { allGroupIds, allMatches, getScore } from "./storage.js";
 import {
   getPredictionFeedback,
@@ -471,9 +472,12 @@ export function renderOverview(state, standings) {
       </article>`;
     })
     .join("");
+  const dailyRanking = buildDailyRanking(state.ranking, state.officialMatches);
+  const dailyLeaders = renderDailyLeaders(dailyRanking);
 
   return {
     leaders,
+    dailyLeaders,
     metrics: [
       ["Grupos", allGroupIds().length],
       ["Seleções", totalTeams],
@@ -485,6 +489,46 @@ export function renderOverview(state, standings) {
     heroTeams: totalTeams,
     heroFilled: `${finished}/${totalMatches}`
   };
+}
+
+function renderDailyLeaders(entries) {
+  if (!entries.length) {
+    return `<article class="daily-ranking-card is-empty">
+      <div class="daily-ranking-head">
+        <div>
+          <h3>Maiores pontuadores do dia</h3>
+          <p>Aguardando jogos finalizados hoje.</p>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  const rows = entries.slice(0, 5).map((entry, index) => `
+    <li class="daily-ranking-row">
+      <strong class="daily-ranking-position">${index + 1}º</strong>
+      <div class="daily-ranking-person">
+        ${renderPersonAvatar(entry.displayName, entry.photoURL, "daily-ranking-avatar")}
+        <span>${escapeHtml(entry.displayName)}</span>
+      </div>
+      <strong class="daily-ranking-points">${entry.points} pts</strong>
+      <span class="daily-ranking-tags">
+        ${entry.exactHits} exato${entry.exactHits === 1 ? "" : "s"} · ${entry.outcomeHits} resultado${entry.outcomeHits === 1 ? "" : "s"}
+      </span>
+    </li>
+  `).join("");
+
+  return `<article class="daily-ranking-card">
+    <div class="daily-ranking-head">
+      <div>
+        <h3>Maiores pontuadores do dia</h3>
+        <p>Recorte dos jogos encerrados no dia operacional.</p>
+      </div>
+      <span class="badge">${entries.length} participante${entries.length === 1 ? "" : "s"}</span>
+    </div>
+    <ol class="daily-ranking-list">
+      ${rows}
+    </ol>
+  </article>`;
 }
 
 export function renderRanking(ranking, currentUid) {
