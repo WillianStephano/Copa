@@ -626,10 +626,17 @@ function renderUserComparison(currentEntry, targetEntry, currentUid) {
     .filter((detail) => currentDetails.has(detail.matchId));
 
   if (!targetDetails.length) {
-    return `<div class="ranking-compare is-empty">
-      <strong>Comparação com você</strong>
-      <span>Ainda não há jogos encerrados com palpites avaliados para os dois.</span>
-    </div>`;
+    return `<details class="ranking-compare ranking-compare-toggle is-empty">
+      <summary class="ranking-compare-summary">
+        <div>
+          <strong>Comparação com você</strong>
+          <span>Sem jogos em comum avaliados</span>
+        </div>
+        <span class="ranking-compare-cta">Ver detalhes</span>
+        <span class="ranking-compare-chevron" aria-hidden="true"></span>
+      </summary>
+      <p>Ainda não há jogos encerrados com palpites avaliados para os dois.</p>
+    </details>`;
   }
 
   const currentName = escapeHtml(currentEntry.displayName || "Você");
@@ -661,8 +668,8 @@ function renderUserComparison(currentEntry, targetEntry, currentUid) {
     </div>`;
   }).join("");
 
-  return `<div class="ranking-compare">
-    <div class="ranking-compare-head">
+  return `<details class="ranking-compare ranking-compare-toggle">
+    <summary class="ranking-compare-summary">
       <div>
         <strong>Comparação com você</strong>
         <span>${targetDetails.length} jogo${targetDetails.length === 1 ? "" : "s"} em comum</span>
@@ -671,9 +678,11 @@ function renderUserComparison(currentEntry, targetEntry, currentUid) {
         <span>${currentName}: <strong>${totals.currentPoints}</strong> pts · ${totals.currentExact} exato${totals.currentExact === 1 ? "" : "s"}</span>
         <span>${targetName}: <strong>${totals.targetPoints}</strong> pts · ${totals.targetExact} exato${totals.targetExact === 1 ? "" : "s"}</span>
       </div>
-    </div>
+      <span class="ranking-compare-cta">Ver duelo</span>
+      <span class="ranking-compare-chevron" aria-hidden="true"></span>
+    </summary>
     <div class="ranking-compare-list">${rows}</div>
-  </div>`;
+  </details>`;
 }
 
 function renderRankingDetail(detail) {

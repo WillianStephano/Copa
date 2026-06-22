@@ -18,3 +18,13 @@ test("menu mobile fecha ao tocar fora", () => {
   assert.match(main, /target\.closest\("#mobileNavToggle"\)/);
   assert.match(main, /classList\.remove\("mobile-open"\)/);
 });
+
+test("comparacao do ranking fica recolhivel e compacta no mobile", () => {
+  const css = readFileSync("css/app.css", "utf8");
+
+  assert.match(css, /\.ranking-compare-toggle\s*\{/);
+  assert.match(css, /\.ranking-compare-summary\s*\{[\s\S]*cursor: pointer;/);
+  assert.match(css, /\.ranking-compare-summary::-webkit-details-marker\s*\{\s*display: none;/);
+  assert.match(css, /@media \(max-width: 620px\)[\s\S]*\.ranking-compare-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(css, /@media \(max-width: 620px\)[\s\S]*\.ranking-compare-list\s*\{[\s\S]*max-height: 260px;/);
+});

@@ -82,10 +82,50 @@ test("renderRanking compara usuario expandido com usuario logado", () => {
   ], "will");
 
   assert.match(view.html, /Comparação com você/);
+  assert.match(view.html, /<details class="ranking-compare ranking-compare-toggle">/);
+  assert.match(view.html, /<summary class="ranking-compare-summary">/);
+  assert.match(view.html, /Ver duelo/);
   assert.match(view.html, /1 jogo em comum/);
   assert.match(view.html, /Willian: <strong>3<\/strong> pts/);
   assert.match(view.html, /Kelwin: <strong>2<\/strong> pts/);
   assert.match(view.html, /Willian: 2 x 1 · 3 pts/);
   assert.match(view.html, /Kelwin: 1 x 0 · 2 pts/);
   assert.match(view.html, /\+1 você/);
+});
+
+test("renderRanking deixa comparacao sem jogos em comum recolhivel", () => {
+  const view = renderRanking([
+    {
+      uid: "will",
+      displayName: "Willian",
+      points: 3,
+      exactHits: 1,
+      outcomeHits: 0,
+      details: [
+        {
+          matchId: "A-0",
+          home: "Brasil",
+          away: "Marrocos",
+          predictedHomeScore: 2,
+          predictedAwayScore: 1,
+          actualHomeScore: 2,
+          actualAwayScore: 1,
+          points: 3,
+          type: "exact"
+        }
+      ]
+    },
+    {
+      uid: "ana",
+      displayName: "Ana",
+      points: 0,
+      exactHits: 0,
+      outcomeHits: 0,
+      details: []
+    }
+  ], "will");
+
+  assert.match(view.html, /ranking-compare-toggle is-empty/);
+  assert.match(view.html, /Sem jogos em comum avaliados/);
+  assert.match(view.html, /Ver detalhes/);
 });
