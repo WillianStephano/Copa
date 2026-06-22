@@ -12,6 +12,56 @@ function matchDateTime(match) {
   return toDate(match?.kickoffAt || match?.kickoffDate || match?.kickoff)?.getTime() ?? 0;
 }
 
+function isScoredMatch(match) {
+  return match?.status === "FINISHED"
+    && Number.isInteger(match.homeScore)
+    && Number.isInteger(match.awayScore);
+}
+
+function finishedMatchesInOrder(matches) {
+  return Array.from(matches.entries())
+    .filter(([, match]) => isScoredMatch(match))
+    .map(([matchId, match]) => ({
+      matchId,
+      match,
+      matchTime: matchDateTime(match)
+    }))
+    .sort((a, b) =>
+      a.matchTime - b.matchTime
+      || a.matchId.localeCompare(b.matchId)
+    );
+}
+
+function buildPredictionIndex(predictions) {
+  const index = new Map();
+  predictions.forEach((prediction) => {
+    if (!prediction.uid || !prediction.matchId) return;
+    index.set(`${prediction.uid}:${prediction.matchId}`, prediction);
+  });
+  return index;
+}
+
+export function calculateHitStreak(uid, predictionsByUserMatch, finishedMatches) {
+  let currentStreak = 0;
+  let bestStreak = 0;
+
+  finishedMatches.forEach(({ matchId, match }) => {
+    const prediction = predictionsByUserMatch.get(`${uid}:${matchId}`);
+    const score = prediction ? scorePrediction(prediction, match) : { type: "miss" };
+    const isHit = score.type === "exact" || score.type === "outcome";
+
+    if (!isHit) {
+      currentStreak = 0;
+      return;
+    }
+
+    currentStreak += 1;
+    bestStreak = Math.max(bestStreak, currentStreak);
+  });
+
+  return { currentStreak, bestStreak };
+}
+
 export function buildRankingDetails(predictions, matches) {
   const details = new Map();
 
@@ -52,6 +102,8 @@ export function buildRankingDetails(predictions, matches) {
 
 export function buildRanking(users, predictions, matches) {
   const entries = new Map();
+  const predictionsByUserMatch = buildPredictionIndex(predictions);
+  const finishedMatches = finishedMatchesInOrder(matches);
 
   users.forEach((user) => {
     if (!user.uid) return;
@@ -63,7 +115,9 @@ export function buildRanking(users, predictions, matches) {
       exactHits: 0,
       outcomeHits: 0,
       misses: 0,
-      scoredPredictions: 0
+      scoredPredictions: 0,
+      currentStreak: 0,
+      bestStreak: 0
     });
   });
 
@@ -80,7 +134,9 @@ export function buildRanking(users, predictions, matches) {
       exactHits: 0,
       outcomeHits: 0,
       misses: 0,
-      scoredPredictions: 0
+      scoredPredictions: 0,
+      currentStreak: 0,
+      bestStreak: 0
     };
 
     const score = scorePrediction(prediction, match);
@@ -90,6 +146,12 @@ export function buildRanking(users, predictions, matches) {
     else if (score.type === "outcome") entry.outcomeHits += 1;
     else entry.misses += 1;
     entries.set(prediction.uid, entry);
+  });
+
+  entries.forEach((entry) => {
+    const streak = calculateHitStreak(entry.uid, predictionsByUserMatch, finishedMatches);
+    entry.currentStreak = streak.currentStreak;
+    entry.bestStreak = streak.bestStreak;
   });
 
   const sorted = Array.from(entries.values()).sort((a, b) =>

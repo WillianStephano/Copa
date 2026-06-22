@@ -1447,6 +1447,147 @@
       font-weight: 800;
     }
 
+    .ranking-streak-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.46);
+      font-size: 0.66rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .ranking-streak-summary,
+    .ranking-compare {
+      padding: 12px 14px;
+      border: 1px solid rgba(220, 233, 228, 0.92);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .ranking-streak-summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .ranking-streak-summary.is-hot {
+      border-color: rgba(245, 197, 66, 0.6);
+      background:
+        linear-gradient(135deg, rgba(255, 248, 220, 0.9), rgba(255, 255, 255, 0.82)),
+        radial-gradient(circle at top right, rgba(245, 197, 66, 0.24), transparent 45%);
+    }
+
+    .ranking-streak-summary div:first-child {
+      display: grid;
+      gap: 3px;
+    }
+
+    .ranking-streak-summary strong,
+    .ranking-compare strong {
+      color: var(--green-900);
+    }
+
+    .ranking-streak-summary span,
+    .ranking-compare span {
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.35;
+    }
+
+    .ranking-streak-numbers {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .ranking-streak-numbers span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 30px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: var(--green-900);
+      background: var(--mint-100);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .ranking-streak-numbers strong {
+      font-family: var(--font-score);
+      font-size: 0.95rem;
+    }
+
+    .ranking-compare {
+      display: grid;
+      gap: 10px;
+    }
+
+    .ranking-compare.is-empty {
+      display: grid;
+      gap: 3px;
+      border-style: dashed;
+    }
+
+    .ranking-compare-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .ranking-compare-head > div:first-child,
+    .ranking-compare-score {
+      display: grid;
+      gap: 3px;
+    }
+
+    .ranking-compare-score {
+      justify-items: end;
+    }
+
+    .ranking-compare-score strong {
+      font-family: var(--font-score);
+    }
+
+    .ranking-compare-list {
+      display: grid;
+      gap: 7px;
+      max-height: 340px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .ranking-compare-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) minmax(130px, auto) minmax(130px, auto) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 1px solid rgba(220, 233, 228, 0.84);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .ranking-compare-row em {
+      justify-self: end;
+      padding: 5px 8px;
+      border-radius: 999px;
+      color: var(--green-900);
+      background: var(--mint-200);
+      font-size: 0.68rem;
+      font-style: normal;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
     .ranking-details-pills {
       display: flex;
       gap: 6px;
@@ -2020,8 +2161,16 @@
       }
 
       .match-predictions-head,
-      .ranking-details-head {
+      .ranking-details-head,
+      .ranking-compare-head,
+      .ranking-streak-summary {
         display: grid;
+      }
+
+      .ranking-compare-score,
+      .ranking-streak-numbers {
+        justify-items: start;
+        justify-content: flex-start;
       }
 
       .prediction-tally {
@@ -2115,6 +2264,14 @@
       .ranking-detail {
         grid-template-columns: 1fr;
         gap: 8px;
+      }
+
+      .ranking-compare-row {
+        grid-template-columns: 1fr;
+      }
+
+      .ranking-compare-row em {
+        justify-self: start;
       }
 
       table {

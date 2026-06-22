@@ -536,10 +536,14 @@ export function renderRanking(ranking, currentUid) {
     return { html: "", empty: true, meta: "Aguardando resultados oficiais" };
   }
 
+  const currentEntry = ranking.find((entry) => entry.uid === currentUid) || null;
   const html = ranking.map((entry) => {
     const isCurrentUser = entry.uid === currentUid;
     const isAiBot = entry.uid === "ai-gemini-bot";
     const safeName = escapeHtml(entry.displayName || "Participante");
+    const streakBadge = entry.currentStreak >= 3
+      ? `<small class="ranking-streak-badge">Sequência de ${entry.currentStreak}</small>`
+      : "";
     const photo = entry.photoURL
       ? `<img class="ranking-avatar" src="${escapeHtml(entry.photoURL)}" alt="" referrerpolicy="no-referrer">`
       : `<span class="ranking-avatar fallback" aria-hidden="true">${safeName.charAt(0).toUpperCase()}</span>`;
@@ -558,11 +562,13 @@ export function renderRanking(ranking, currentUid) {
           <span>A partir daqui, ela corre atrás dos humanos.</span>
         </div>`
       : "";
+    const streakSummary = renderStreakSummary(entry);
+    const comparison = renderUserComparison(currentEntry, entry, currentUid);
 
     return `<details class="ranking-entry ${isCurrentUser ? "current-user" : ""}">
       <summary class="ranking-row">
         <strong class="ranking-position">${entry.position}º</strong>
-        <div class="ranking-person">${photo}<span>${safeName}${isCurrentUser ? " (você)" : ""}</span></div>
+        <div class="ranking-person">${photo}<span>${safeName}${isCurrentUser ? " (você)" : ""}</span>${streakBadge}</div>
         <strong>${entry.points || 0}</strong>
         <span>${entry.exactHits || 0}</span>
         <span>${entry.outcomeHits || 0}</span>
@@ -570,6 +576,8 @@ export function renderRanking(ranking, currentUid) {
       </summary>
       <div class="ranking-details">
         ${aiEntryNote}
+        ${streakSummary}
+        ${comparison}
         <div class="ranking-details-head">
           <div>
             <strong>Desempenho por partida</strong>
@@ -591,6 +599,81 @@ export function renderRanking(ranking, currentUid) {
     empty: false,
     meta: `${ranking.length} participante${ranking.length === 1 ? "" : "s"}`
   };
+}
+
+function renderStreakSummary(entry) {
+  const currentStreak = Number(entry.currentStreak) || 0;
+  const bestStreak = Number(entry.bestStreak) || 0;
+  const hasBadge = bestStreak >= 3;
+
+  return `<div class="ranking-streak-summary ${hasBadge ? "is-hot" : ""}">
+    <div>
+      <strong>${hasBadge ? "Conquista de sequência" : "Sequência de acertos"}</strong>
+      <span>Placar exato ou resultado correto contam. Erro ou jogo sem palpite quebram a sequência.</span>
+    </div>
+    <div class="ranking-streak-numbers">
+      <span><strong>${currentStreak}</strong> atual</span>
+      <span><strong>${bestStreak}</strong> maior</span>
+    </div>
+  </div>`;
+}
+
+function renderUserComparison(currentEntry, targetEntry, currentUid) {
+  if (!currentEntry || !targetEntry || targetEntry.uid === currentUid) return "";
+
+  const currentDetails = new Map((currentEntry.details || []).map((detail) => [detail.matchId, detail]));
+  const targetDetails = (targetEntry.details || [])
+    .filter((detail) => currentDetails.has(detail.matchId));
+
+  if (!targetDetails.length) {
+    return `<div class="ranking-compare is-empty">
+      <strong>Comparação com você</strong>
+      <span>Ainda não há jogos encerrados com palpites avaliados para os dois.</span>
+    </div>`;
+  }
+
+  const currentName = escapeHtml(currentEntry.displayName || "Você");
+  const targetName = escapeHtml(targetEntry.displayName || "Participante");
+  const totals = targetDetails.reduce((total, targetDetail) => {
+    const currentDetail = currentDetails.get(targetDetail.matchId);
+    return {
+      currentPoints: total.currentPoints + (Number(currentDetail.points) || 0),
+      targetPoints: total.targetPoints + (Number(targetDetail.points) || 0),
+      currentExact: total.currentExact + (currentDetail.type === "exact" ? 1 : 0),
+      targetExact: total.targetExact + (targetDetail.type === "exact" ? 1 : 0)
+    };
+  }, {
+    currentPoints: 0,
+    targetPoints: 0,
+    currentExact: 0,
+    targetExact: 0
+  });
+
+  const rows = targetDetails.map((targetDetail) => {
+    const currentDetail = currentDetails.get(targetDetail.matchId);
+    const diff = (Number(currentDetail.points) || 0) - (Number(targetDetail.points) || 0);
+    const diffLabel = diff > 0 ? `+${diff} você` : diff < 0 ? `+${Math.abs(diff)} ${targetName}` : "empate";
+    return `<div class="ranking-compare-row">
+      <strong>${escapeHtml(targetDetail.home)} x ${escapeHtml(targetDetail.away)}</strong>
+      <span>${currentName}: ${currentDetail.predictedHomeScore} x ${currentDetail.predictedAwayScore} · ${currentDetail.points} pts</span>
+      <span>${targetName}: ${targetDetail.predictedHomeScore} x ${targetDetail.predictedAwayScore} · ${targetDetail.points} pts</span>
+      <em>${diffLabel}</em>
+    </div>`;
+  }).join("");
+
+  return `<div class="ranking-compare">
+    <div class="ranking-compare-head">
+      <div>
+        <strong>Comparação com você</strong>
+        <span>${targetDetails.length} jogo${targetDetails.length === 1 ? "" : "s"} em comum</span>
+      </div>
+      <div class="ranking-compare-score">
+        <span>${currentName}: <strong>${totals.currentPoints}</strong> pts · ${totals.currentExact} exato${totals.currentExact === 1 ? "" : "s"}</span>
+        <span>${targetName}: <strong>${totals.targetPoints}</strong> pts · ${totals.targetExact} exato${totals.targetExact === 1 ? "" : "s"}</span>
+      </div>
+    </div>
+    <div class="ranking-compare-list">${rows}</div>
+  </div>`;
 }
 
 function renderRankingDetail(detail) {

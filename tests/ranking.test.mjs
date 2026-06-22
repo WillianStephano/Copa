@@ -136,3 +136,45 @@ test("detalhes do ranking ficam em ordem de data da partida", () => {
   assert.deepEqual(details.map((detail) => detail.matchId), ["A-9", "A-0", "A-1"]);
   assert.equal(Object.hasOwn(details[0], "matchTime"), false);
 });
+
+test("ranking calcula sequencia atual e maior sequencia de acertos", () => {
+  const users = [{ uid: "ana", displayName: "Ana" }];
+  const predictions = [
+    { uid: "ana", matchId: "A-0", homeScore: 1, awayScore: 0 },
+    { uid: "ana", matchId: "A-1", homeScore: 2, awayScore: 0 },
+    { uid: "ana", matchId: "A-2", homeScore: 0, awayScore: 0 },
+    { uid: "ana", matchId: "A-3", homeScore: 3, awayScore: 0 }
+  ];
+  const matches = new Map([
+    ["A-0", { status: "FINISHED", homeScore: 1, awayScore: 0, kickoffAt: new Date("2026-06-11T18:00:00.000Z") }],
+    ["A-1", { status: "FINISHED", homeScore: 3, awayScore: 1, kickoffAt: new Date("2026-06-12T18:00:00.000Z") }],
+    ["A-2", { status: "FINISHED", homeScore: 0, awayScore: 0, kickoffAt: new Date("2026-06-13T18:00:00.000Z") }],
+    ["A-3", { status: "FINISHED", homeScore: 2, awayScore: 0, kickoffAt: new Date("2026-06-14T18:00:00.000Z") }]
+  ]);
+
+  const [entry] = buildRanking(users, predictions, matches);
+
+  assert.equal(entry.currentStreak, 4);
+  assert.equal(entry.bestStreak, 4);
+});
+
+test("ranking quebra sequencia quando usuario erra ou nao palpita jogo encerrado", () => {
+  const users = [{ uid: "ana", displayName: "Ana" }];
+  const predictions = [
+    { uid: "ana", matchId: "A-0", homeScore: 1, awayScore: 0 },
+    { uid: "ana", matchId: "A-1", homeScore: 0, awayScore: 1 },
+    { uid: "ana", matchId: "A-3", homeScore: 2, awayScore: 0 }
+  ];
+  const matches = new Map([
+    ["A-0", { status: "FINISHED", homeScore: 1, awayScore: 0, kickoffAt: new Date("2026-06-11T18:00:00.000Z") }],
+    ["A-1", { status: "FINISHED", homeScore: 2, awayScore: 0, kickoffAt: new Date("2026-06-12T18:00:00.000Z") }],
+    ["A-2", { status: "FINISHED", homeScore: 1, awayScore: 1, kickoffAt: new Date("2026-06-13T18:00:00.000Z") }],
+    ["A-3", { status: "FINISHED", homeScore: 3, awayScore: 0, kickoffAt: new Date("2026-06-14T18:00:00.000Z") }]
+  ]);
+
+  const [entry] = buildRanking(users, predictions, matches);
+
+  assert.equal(entry.currentStreak, 1);
+  assert.equal(entry.bestStreak, 1);
+});
+
