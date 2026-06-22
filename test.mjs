@@ -16,3 +16,4 @@ import "./tests/match-date.test.mjs";
 import "./tests/share-predictions.test.mjs";
 import "./tests/match-prediction-summaries.test.mjs";
 import "./tests/pwa.test.mjs";
+import "./tests/mobile-ux.test.mjs";

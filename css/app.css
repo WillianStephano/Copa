@@ -1823,18 +1823,25 @@
 
     @media (max-width: 620px) {
       .app-shell {
-        width: min(100% - 20px, 1220px);
-        padding-top: 10px;
+        width: min(100% - 18px, 1220px);
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(44px, env(safe-area-inset-bottom));
       }
 
       .userbar {
         align-items: stretch;
         flex-direction: column;
+        gap: 12px;
+        padding: 12px;
       }
 
       .userbar-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
+      }
+
+      .userbar-actions:not(:has(.install-app:not([hidden]))) .logout {
+        grid-column: 1 / -1;
       }
 
       .userbar-actions .btn {
@@ -1855,7 +1862,18 @@
       }
 
       .hero-inner {
-        padding: 22px;
+        gap: 18px;
+        padding: 20px;
+      }
+
+      .hero p {
+        margin-top: 12px;
+        font-size: 0.94rem;
+        line-height: 1.5;
+      }
+
+      .hero-panel {
+        padding: 14px;
       }
 
       .mobile-nav {
@@ -1979,6 +1997,19 @@
         grid-template-columns: 1fr;
       }
 
+      .card-header {
+        display: grid;
+      }
+
+      .card-actions {
+        justify-items: stretch;
+      }
+
+      .card-actions .badge,
+      .card-actions .table-toggle {
+        justify-content: center;
+      }
+
       .match-row {
         grid-template-columns: 44px minmax(0, 1fr) 68px minmax(0, 1fr);
         gap: 6px;
@@ -2030,21 +2061,60 @@
       }
 
       .ranking-card {
-        overflow-x: auto;
+        overflow: visible;
       }
 
-      .ranking-header,
+      .ranking-header {
+        display: none;
+      }
+
+      .ranking-entry {
+        overflow: hidden;
+        margin-bottom: 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 8px 20px rgba(18, 33, 30, 0.05);
+      }
+
+      .ranking-entry:last-child {
+        margin-bottom: 0;
+      }
+
       .ranking-row {
-        min-width: 680px;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+        min-width: 0;
+        padding: 12px;
+      }
+
+      .ranking-row > strong:nth-of-type(2) {
+        justify-self: end;
+        padding: 6px 9px;
+        border-radius: 999px;
+        color: var(--blue-900);
+        background: rgba(245, 197, 66, 0.36);
+        font-family: var(--font-score);
+      }
+
+      .ranking-row > span:not(.ranking-expand) {
+        display: none;
+      }
+
+      .ranking-expand {
+        grid-column: 3;
+        grid-row: 2;
+        justify-self: end;
       }
 
       .ranking-details {
-        min-width: 680px;
-        padding-left: 16px;
+        min-width: 0;
+        padding: 12px;
       }
 
       .ranking-detail {
-        grid-template-columns: minmax(180px, 1fr) 120px auto;
+        grid-template-columns: 1fr;
+        gap: 8px;
       }
 
       table {
@@ -2059,9 +2129,29 @@
 
     @media (max-width: 380px) {
       .match-row {
-        grid-template-columns: 38px minmax(0, 1fr) 60px minmax(0, 1fr);
-        gap: 4px;
-        padding: 2px 2px;
+        grid-template-columns: minmax(0, 1fr) 62px minmax(0, 1fr);
+        grid-template-areas:
+          "date date date"
+          "home score away";
+        gap: 6px;
+        padding: 8px 6px;
+      }
+
+      .match-date {
+        grid-area: date;
+        text-align: left;
+      }
+
+      .team.home {
+        grid-area: home;
+      }
+
+      .score-inputs {
+        grid-area: score;
+      }
+
+      .match-row > .team:not(.home) {
+        grid-area: away;
       }
 
       .score-inputs input {

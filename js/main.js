@@ -197,6 +197,13 @@ els.mobileNavToggle.addEventListener("click", () => {
   els.mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
+document.addEventListener("click", (event) => {
+  if (!els.tabsNav.classList.contains("mobile-open")) return;
+  if (event.target.closest("#mainTabs") || event.target.closest("#mobileNavToggle")) return;
+  els.tabsNav.classList.remove("mobile-open");
+  els.mobileNavToggle.setAttribute("aria-expanded", "false");
+});
+
 els.tabs.forEach((tab) => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
