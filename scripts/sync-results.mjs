@@ -7,6 +7,7 @@ import {
   mapApiFootballFixture
 } from "./api-football.mjs";
 import { updateRanking } from "./admin-ranking.mjs";
+import { fetchEspnEvents, mapEspnEvent } from "./espn-api.mjs";
 import { normalizeResultStatus } from "./result-status.mjs";
 import { shouldSyncResults } from "./sync-policy.mjs";
 import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
@@ -92,9 +93,26 @@ async function fetchFromWorldCup26() {
   return apiMatches.map(mapApiMatch).filter(Boolean);
 }
 
-async function fetchMappedMatches({ useApiFootball }) {
+async function fetchFromEspn() {
+  const events = await fetchEspnEvents();
+  return events.map(mapEspnEvent).filter(Boolean);
+}
+
+async function fetchMappedMatches() {
   const attemptedSources = [];
   const apiFootballKey = process.env.API_FOOTBALL_KEY;
+  const useApiFootball = process.env.ENABLE_API_FOOTBALL === "true";
+
+  attemptedSources.push("espn");
+  try {
+    const mapped = await fetchFromEspn();
+    if (mapped.length) {
+      return { mapped, source: "espn", attemptedSources };
+    }
+    console.warn("ESPN respondeu, mas nenhum jogo foi mapeado.");
+  } catch (error) {
+    console.warn("ESPN falhou. Usando worldcup26.ir como fallback.", error);
+  }
 
   if (useApiFootball && apiFootballKey) {
     attemptedSources.push("api-football");
@@ -129,9 +147,7 @@ if (!syncDecision.shouldSync) {
 }
 
 try {
-  const { mapped, source, attemptedSources } = await fetchMappedMatches({
-    useApiFootball: syncDecision.reason !== "seed-empty-schedule"
-  });
+  const { mapped, source, attemptedSources } = await fetchMappedMatches();
   const mappedMatches = await syncMatches(mapped);
   const ranking = await updateRanking(db);
 

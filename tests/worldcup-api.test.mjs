@@ -12,6 +12,8 @@ test("mapeia nomes da API para as seleções locais", () => {
   assert.equal(canonicalTeam("Mexico"), "México");
   assert.equal(canonicalTeam("South Africa"), "África do Sul");
   assert.equal(canonicalTeam("Democratic Republic of the Congo"), "RD Congo");
+  assert.equal(canonicalTeam("Bosnia-Herzegovina"), "Bósnia");
+  assert.equal(canonicalTeam("Türkiye"), "Turquia");
 });
 
 test("converte horário local do estádio para UTC", () => {
