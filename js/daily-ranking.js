@@ -1,4 +1,15 @@
 import { isMatchToday } from "./match-date.js";
+import { scorePrediction } from "./scoring.js";
+
+function scoreDailyDetail(detail, match) {
+  return scorePrediction(
+    {
+      homeScore: detail.predictedHomeScore,
+      awayScore: detail.predictedAwayScore
+    },
+    match
+  );
+}
 
 export function buildDailyRanking(ranking, officialMatches, now = new Date()) {
   return ranking
@@ -9,12 +20,15 @@ export function buildDailyRanking(ranking, officialMatches, now = new Date()) {
         return match?.status === "FINISHED" && isMatchToday(match, now);
       });
 
-      const summary = todayDetails.reduce((total, detail) => ({
-        points: total.points + (Number(detail.points) || 0),
-        exactHits: total.exactHits + (detail.type === "exact" ? 1 : 0),
-        outcomeHits: total.outcomeHits + (detail.type === "outcome" ? 1 : 0),
-        misses: total.misses + (detail.type === "miss" ? 1 : 0)
-      }), {
+      const summary = todayDetails.reduce((total, detail) => {
+        const score = scoreDailyDetail(detail, officialMatches[detail.matchId]);
+        return {
+          points: total.points + score.points,
+          exactHits: total.exactHits + (score.type === "exact" ? 1 : 0),
+          outcomeHits: total.outcomeHits + (score.type === "outcome" ? 1 : 0),
+          misses: total.misses + (score.type === "miss" ? 1 : 0)
+        };
+      }, {
         points: 0,
         exactHits: 0,
         outcomeHits: 0,
