@@ -1,5 +1,17 @@
 import { scorePrediction } from "./scoring.js";
 
+function toDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === "function") return value.toDate();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function matchDateTime(match) {
+  return toDate(match?.kickoffAt || match?.kickoffDate || match?.kickoff)?.getTime() ?? 0;
+}
+
 export function buildRankingDetails(predictions, matches) {
   const details = new Map();
 
@@ -19,13 +31,20 @@ export function buildRankingDetails(predictions, matches) {
       actualHomeScore: match.homeScore,
       actualAwayScore: match.awayScore,
       points: score.points,
-      type: score.type
+      type: score.type,
+      matchTime: matchDateTime(match)
     });
     details.set(prediction.uid, userDetails);
   });
 
   details.forEach((items) => {
-    items.sort((a, b) => a.matchId.localeCompare(b.matchId));
+    items.sort((a, b) =>
+      a.matchTime - b.matchTime
+      || a.matchId.localeCompare(b.matchId)
+    );
+    items.forEach((item) => {
+      delete item.matchTime;
+    });
   });
 
   return details;
