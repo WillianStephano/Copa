@@ -59,3 +59,68 @@ test("não compartilha rascunhos nem partidas de outro dia", () => {
   assert.equal(result.confirmedCount, 0);
   assert.equal(result.missingCount, 1);
 });
+
+test("compartilhamento de grupos ignora jogos do mata-mata", () => {
+  const result = buildTodayPredictionsMessage({
+    phase: "group",
+    now: new Date("2026-06-29T15:00:00.000Z"),
+    officialMatches: {
+      "A-0": {
+        id: "A-0",
+        phase: "group",
+        home: "México",
+        away: "África do Sul",
+        kickoffDate: new Date("2026-06-29T18:00:00.000Z")
+      },
+      "KO-R32-1": {
+        id: "KO-R32-1",
+        phase: "knockout",
+        home: "Brasil",
+        away: "Japão",
+        kickoffDate: new Date("2026-06-29T20:00:00.000Z")
+      }
+    },
+    predictions: {
+      "A-0": { homeScore: 1, awayScore: 0 },
+      "KO-R32-1": { homeScore: 2, awayScore: 1, qualifiedTeamId: "Brasil" }
+    }
+  });
+
+  assert.equal(result.todayCount, 1);
+  assert.equal(result.confirmedCount, 1);
+  assert.match(result.text, /México 1 x 0 África do Sul/);
+  assert.doesNotMatch(result.text, /Brasil/);
+});
+
+test("compartilhamento do mata-mata inclui classificado", () => {
+  const result = buildTodayPredictionsMessage({
+    phase: "knockout",
+    displayName: "Willian",
+    now: new Date("2026-06-29T15:00:00.000Z"),
+    officialMatches: {
+      "KO-R32-1": {
+        id: "KO-R32-1",
+        phase: "knockout",
+        home: "Brasil",
+        away: "Japão",
+        kickoffDate: new Date("2026-06-29T20:00:00.000Z")
+      },
+      "A-0": {
+        id: "A-0",
+        phase: "group",
+        home: "México",
+        away: "África do Sul",
+        kickoffDate: new Date("2026-06-29T18:00:00.000Z")
+      }
+    },
+    predictions: {
+      "KO-R32-1": { homeScore: 1, awayScore: 1, qualifiedTeamId: "Brasil" },
+      "A-0": { homeScore: 1, awayScore: 0 }
+    }
+  });
+
+  assert.equal(result.todayCount, 1);
+  assert.match(result.text, /Meus palpites do mata-mata de Willian/);
+  assert.match(result.text, /Brasil 1 x 1 Japão \| passa Brasil/);
+  assert.doesNotMatch(result.text, /México/);
+});

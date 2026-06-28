@@ -71,7 +71,7 @@ function formatSyncDate(value) {
 
 export function renderGroupFilter(state) {
   const todayCount = Object.values(state.officialMatches).filter((match) =>
-    isMatchToday(match)
+    (!match.phase || match.phase === "group") && isMatchToday(match)
   ).length;
   const buttons = [
     `<button class="chip today-chip ${state.todayOnly ? "active" : ""}" data-today-filter type="button" aria-pressed="${state.todayOnly}">Jogos de hoje</button>`,
@@ -87,6 +87,19 @@ export function renderGroupFilter(state) {
   });
 
   return buttons.join("");
+}
+
+export function renderKnockoutFilter(state) {
+  const todayCount = Object.values(state.officialMatches).filter((match) =>
+    match.phase === "knockout" && isMatchToday(match, state.now)
+  ).length;
+
+  return [
+    `<button class="chip today-chip ${state.knockoutTodayOnly ? "active" : ""}" data-knockout-today-filter type="button" aria-pressed="${state.knockoutTodayOnly}">Jogos de hoje</button>`,
+    `<button class="chip share-chip" data-share-knockout-today type="button" ${todayCount ? "" : "disabled"}>Copiar palpites</button>`,
+    `<span class="filter-divider" aria-hidden="true"></span>`,
+    `<span class="knockout-filter-note">${todayCount} jogo${todayCount === 1 ? "" : "s"} do mata-mata hoje</span>`
+  ].join("");
 }
 
 function renderTeam(team, classes = "") {
@@ -442,13 +455,19 @@ function renderKnockoutCard(state, match) {
     away
   );
 
+  const matchLabel = match.stage === "final"
+    ? "Final"
+    : match.stage === "third-place"
+      ? "3o lugar"
+      : `Jogo ${match.matchNumber || 1}`;
+
   return `<article class="knockout-match ${prediction ? "has-confirmed-prediction" : ""} ${officialResultHtml ? "has-official-result" : ""}" data-knockout-match="${match.id}" data-home="${escapeHtml(home)}" data-away="${escapeHtml(away)}">
     <div class="knockout-match-head">
       <span class="badge">${match.stageTitle}</span>
       <span>${formatKnockoutKickoff(match)}</span>
     </div>
     <div class="match-row knockout-row ${completed ? "completed" : ""}">
-      <span class="match-date">${match.id}</span>
+      <span class="match-date">${matchLabel}</span>
       ${renderTeam(home, "home")}
       <div class="score-inputs">
         <input class="${homeScore !== "" ? "filled" : ""}" aria-label="${home} contra ${away}, gols de ${home}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${homeScore}" data-knockout-score="${match.id}:home" ${locked || !teamsReady ? "disabled" : ""}>
@@ -470,6 +489,7 @@ export function renderKnockout(state) {
   const matches = mergeKnockoutMatches(state.officialMatches);
   const query = normalize(state.query);
   const visibleMatches = matches.filter((match) => {
+    if (state.knockoutTodayOnly && !isMatchToday(match, state.now)) return false;
     const haystack = normalize([
       match.id,
       match.stageTitle,
@@ -506,7 +526,12 @@ export function renderKnockout(state) {
   return {
     html,
     empty: visibleMatches.length === 0,
-    meta: `${synced}/${matches.length} jogos com horário oficial`
+    emptyMessage: state.knockoutTodayOnly
+      ? "Não há jogos do mata-mata hoje."
+      : "Nenhum jogo de mata-mata encontrado para a busca atual.",
+    meta: state.knockoutTodayOnly
+      ? `${visibleMatches.length} jogo${visibleMatches.length === 1 ? "" : "s"} do mata-mata hoje`
+      : `${synced}/${matches.length} jogos com horário oficial`
   };
 }
 

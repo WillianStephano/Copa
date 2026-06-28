@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildKnockoutSkeleton, mergeKnockoutMatches } from "../js/knockout.js";
-import { renderKnockout } from "../js/render.js";
+import { renderKnockout, renderKnockoutFilter } from "../js/render.js";
 import { allMatches } from "../js/storage.js";
 
 function installLocalStorage() {
@@ -22,7 +22,7 @@ test("mata-mata cria esqueleto com 16 avos ate final", () => {
 
   assert.equal(matches.length, 32);
   assert.equal(matches.filter((match) => match.stage === "round-of-32").length, 16);
-  assert.equal(matches.at(-1).id, "KO-F-1");
+  assert.equal(matches.at(-1).id, "KO-FINAL-1");
 });
 
 test("ids do mata-mata nao colidem com jogos da fase de grupos", () => {
@@ -31,6 +31,7 @@ test("ids do mata-mata nao colidem com jogos da fase de grupos", () => {
 
   assert.equal(knockoutIds.some((id) => groupIds.has(id)), false);
   assert.equal(knockoutIds.includes("F-1"), false);
+  assert.equal(knockoutIds.includes("KO-F-1"), false);
 });
 
 test("mata-mata mescla jogo oficial sem perder fase e placeholders", () => {
@@ -103,8 +104,72 @@ test("final do mata-mata nao herda palpite nem resumo do jogo F-1 do grupo", () 
     officialMatches: {}
   });
 
-  assert.match(view.html, /KO-F-1/);
+  assert.match(view.html, /KO-FINAL-1/);
+  assert.doesNotMatch(view.html, /KO-F-1/);
+  assert.match(view.html, /<span class="match-date">Final<\/span>/);
+  assert.doesNotMatch(view.html, /<span class="match-date">F-1<\/span>/);
+  assert.doesNotMatch(view.html, /<span class="match-date">KO-F-1<\/span>/);
   assert.doesNotMatch(view.html, /Palpite confirmado/);
   assert.doesNotMatch(view.html, /3 participantes com palpite liberado/);
   assert.doesNotMatch(view.html, /2 x 2/);
+});
+
+test("filtro do mata-mata mostra jogos de hoje e copiar palpites", () => {
+  const html = renderKnockoutFilter({
+    knockoutTodayOnly: true,
+    now: new Date("2026-06-29T15:00:00.000Z"),
+    officialMatches: {
+      "KO-R32-1": {
+        id: "KO-R32-1",
+        phase: "knockout",
+        kickoffDate: new Date("2026-06-29T18:00:00.000Z")
+      },
+      "A-0": {
+        id: "A-0",
+        phase: "group",
+        kickoffDate: new Date("2026-06-29T18:00:00.000Z")
+      }
+    }
+  });
+
+  assert.match(html, /data-knockout-today-filter/);
+  assert.match(html, /aria-pressed="true"/);
+  assert.match(html, /data-share-knockout-today/);
+  assert.match(html, /1 jogo do mata-mata hoje/);
+});
+
+test("renderKnockout filtra somente jogos do mata-mata de hoje", () => {
+  installLocalStorage();
+  const view = renderKnockout({
+    query: "",
+    knockoutTodayOnly: true,
+    now: new Date("2026-06-29T15:00:00.000Z"),
+    predictions: {},
+    matchPredictionSummaries: {},
+    officialMatches: {
+      "KO-R32-1": {
+        id: "KO-R32-1",
+        phase: "knockout",
+        stage: "round-of-32",
+        home: "Brasil",
+        away: "Japão",
+        status: "SCHEDULED",
+        kickoffDate: new Date("2026-06-29T18:00:00.000Z")
+      },
+      "KO-R32-2": {
+        id: "KO-R32-2",
+        phase: "knockout",
+        stage: "round-of-32",
+        home: "Argentina",
+        away: "França",
+        status: "SCHEDULED",
+        kickoffDate: new Date("2026-06-30T18:00:00.000Z")
+      }
+    }
+  });
+
+  assert.equal(view.empty, false);
+  assert.match(view.meta, /1 jogo do mata-mata hoje/);
+  assert.match(view.html, /Brasil/);
+  assert.doesNotMatch(view.html, /Argentina/);
 });

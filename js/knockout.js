@@ -4,7 +4,7 @@ export const knockoutStages = [
   { id: "quarter-final", title: "Quartas de final", prefix: "QF", count: 4 },
   { id: "semi-final", title: "Semifinais", prefix: "SF", count: 2 },
   { id: "third-place", title: "Disputa de 3o lugar", prefix: "TP", count: 1 },
-  { id: "final", title: "Final", prefix: "F", count: 1 }
+  { id: "final", title: "Final", prefix: "FINAL", count: 1 }
 ];
 
 export function buildKnockoutSkeleton() {

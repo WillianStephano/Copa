@@ -15,6 +15,7 @@ import {
   renderCalendar,
   renderGroupFilter,
   renderKnockout,
+  renderKnockoutFilter,
   renderOverview,
   renderRanking,
   renderSimulator,
@@ -36,6 +37,7 @@ const state = {
   activeTab: "overview",
   activeGroup: "ALL",
   todayOnly: false,
+  knockoutTodayOnly: false,
   query: "",
   expandedGroups: new Set(),
   user: null,
@@ -63,6 +65,7 @@ const els = {
   clearSearch: document.getElementById("clearSearch"),
   resetScores: document.getElementById("resetScores"),
   groupFilter: document.getElementById("groupFilter"),
+  knockoutFilter: document.getElementById("knockoutFilter"),
   groupsGrid: document.getElementById("groupsGrid"),
   standingsGrid: document.getElementById("standingsGrid"),
   rankingList: document.getElementById("rankingList"),
@@ -138,6 +141,7 @@ function renderAll() {
   const syncStatusText = renderSyncStatus(state.syncStatus);
   const groupFilterHtml = renderGroupFilter(state);
   els.groupFilter.innerHTML = groupFilterHtml;
+  els.knockoutFilter.innerHTML = renderKnockoutFilter(state);
 
   const overview = renderOverview(state, officialStandings);
   els.dashboardMetrics.innerHTML = overview.metrics;
@@ -157,6 +161,7 @@ function renderAll() {
   const knockout = renderKnockout(state);
   els.knockoutGrid.innerHTML = knockout.html;
   els.knockoutEmpty.classList.toggle("active", knockout.empty);
+  els.knockoutEmpty.textContent = knockout.emptyMessage;
   els.knockoutMeta.textContent = `${knockout.meta} · ${syncStatusText}`;
 
   const standingsView = renderStandings(state, officialStandings);
@@ -207,6 +212,37 @@ async function copyText(text) {
   if (!copied) throw new Error("Falha ao copiar.");
 }
 
+function copyTodayPredictions({ button, phase, noGamesMessage, noPredictionsMessage }) {
+  const message = buildTodayPredictionsMessage({
+    predictions: state.predictions,
+    officialMatches: state.officialMatches,
+    displayName: state.user?.displayName || "",
+    phase
+  });
+
+  if (!message.todayCount) {
+    showToast(noGamesMessage);
+    return;
+  }
+  if (!message.confirmedCount) {
+    showToast(noPredictionsMessage);
+    return;
+  }
+
+  button.disabled = true;
+  copyText(message.text)
+    .then(() => {
+      const suffix = message.missingCount
+        ? ` ${message.missingCount} ainda não confirmado${message.missingCount === 1 ? "" : "s"}.`
+        : "";
+      showToast(`Palpites copiados!${suffix}`);
+    })
+    .catch(() => showToast("Não foi possível copiar os palpites."))
+    .finally(() => {
+      button.disabled = false;
+    });
+}
+
 els.resetScores.addEventListener("click", resetScoresAction);
 
 els.mobileNavToggle.addEventListener("click", () => {
@@ -254,33 +290,12 @@ window.addEventListener("appinstalled", () => {
 els.groupFilter.addEventListener("click", (event) => {
   const shareButton = event.target.closest("[data-share-today]");
   if (shareButton) {
-    const message = buildTodayPredictionsMessage({
-      predictions: state.predictions,
-      officialMatches: state.officialMatches,
-      displayName: state.user?.displayName || ""
+    copyTodayPredictions({
+      button: shareButton,
+      phase: "group",
+      noGamesMessage: "Não há jogos de grupos hoje.",
+      noPredictionsMessage: "Confirme ao menos um palpite de grupo de hoje antes de compartilhar."
     });
-
-    if (!message.todayCount) {
-      showToast("Não há jogos hoje.");
-      return;
-    }
-    if (!message.confirmedCount) {
-      showToast("Confirme ao menos um palpite de hoje antes de compartilhar.");
-      return;
-    }
-
-    shareButton.disabled = true;
-    copyText(message.text)
-      .then(() => {
-        const suffix = message.missingCount
-          ? ` ${message.missingCount} ainda não confirmado${message.missingCount === 1 ? "" : "s"}.`
-          : "";
-        showToast(`Palpites copiados!${suffix}`);
-      })
-      .catch(() => showToast("Não foi possível copiar os palpites."))
-      .finally(() => {
-        shareButton.disabled = false;
-      });
     return;
   }
 
@@ -294,6 +309,24 @@ els.groupFilter.addEventListener("click", (event) => {
   const button = event.target.closest("[data-group]");
   if (!button) return;
   state.activeGroup = button.dataset.group;
+  renderAll();
+});
+
+els.knockoutFilter.addEventListener("click", (event) => {
+  const shareButton = event.target.closest("[data-share-knockout-today]");
+  if (shareButton) {
+    copyTodayPredictions({
+      button: shareButton,
+      phase: "knockout",
+      noGamesMessage: "Não há jogos do mata-mata hoje.",
+      noPredictionsMessage: "Confirme ao menos um palpite do mata-mata de hoje antes de compartilhar."
+    });
+    return;
+  }
+
+  const todayButton = event.target.closest("[data-knockout-today-filter]");
+  if (!todayButton) return;
+  state.knockoutTodayOnly = !state.knockoutTodayOnly;
   renderAll();
 });
 

@@ -27,7 +27,7 @@ test("index declara manifest, icone e menu mobile", () => {
 test("service worker guarda o shell principal em cache", () => {
   const serviceWorker = readFileSync("sw.js", "utf8");
 
-  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v6"/);
+  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v7"/);
   assert.match(serviceWorker, /\.\/index\.html/);
   assert.match(serviceWorker, /\.\/css\/app\.css/);
   assert.match(serviceWorker, /\.\/js\/main\.js/);

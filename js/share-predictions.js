@@ -22,9 +22,15 @@ export function buildTodayPredictionsMessage({
   predictions,
   officialMatches,
   displayName = "",
-  now = new Date()
+  now = new Date(),
+  phase = null
 }) {
   const todayMatches = Object.values(officialMatches)
+    .filter((match) => {
+      if (!phase) return true;
+      if (phase === "group") return !match.phase || match.phase === "group";
+      return match.phase === phase;
+    })
     .filter((match) => isMatchToday(match, now))
     .sort((a, b) => a.kickoffDate - b.kickoffDate);
 
@@ -45,14 +51,18 @@ export function buildTodayPredictionsMessage({
   }
 
   const owner = displayName ? ` de ${displayName}` : "";
+  const phaseLabel = phase === "knockout" ? " do mata-mata" : "";
   const lines = [
-    `Meus palpites${owner} - ${formatDate(now)}`,
+    `Meus palpites${phaseLabel}${owner} - ${formatDate(now)}`,
     ""
   ];
 
   confirmed.forEach(({ match, prediction }) => {
+    const qualified = prediction.qualifiedTeamId
+      ? ` | passa ${prediction.qualifiedTeamId}`
+      : "";
     lines.push(
-      `${formatTime(match.kickoffDate)} | ${match.home} ${prediction.homeScore} x ${prediction.awayScore} ${match.away}`
+      `${formatTime(match.kickoffDate)} | ${match.home} ${prediction.homeScore} x ${prediction.awayScore} ${match.away}${qualified}`
     );
   });
 
