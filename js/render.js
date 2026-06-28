@@ -393,7 +393,10 @@ function renderQualifiedPicker(match, home, away, selectedTeam, locked, complete
 }
 
 function renderKnockoutCard(state, match) {
-  const prediction = state.predictions[match.id];
+  const savedPrediction = state.predictions[match.id];
+  const prediction = savedPrediction?.phase === "knockout" || match.id.startsWith("KO-")
+    ? savedPrediction
+    : null;
   const home = match.home || match.homePlaceholder || "A definir";
   const away = match.away || match.awayPlaceholder || "A definir";
   const teamsReady = home !== "A definir" && away !== "A definir";

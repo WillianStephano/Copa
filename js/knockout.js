@@ -12,7 +12,7 @@ export function buildKnockoutSkeleton() {
     Array.from({ length: stage.count }, (_, index) => {
       const number = index + 1;
       return {
-        id: `${stage.prefix}-${number}`,
+        id: `KO-${stage.prefix}-${number}`,
         phase: "knockout",
         stage: stage.id,
         stageTitle: stage.title,
@@ -53,4 +53,3 @@ export function mergeKnockoutMatches(officialMatches = {}) {
     };
   });
 }
-
