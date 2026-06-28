@@ -11,6 +11,7 @@ import { fetchEspnEvents, mapEspnEvent } from "./espn-api.mjs";
 import { normalizeResultStatus } from "./result-status.mjs";
 import { shouldSyncResults } from "./sync-policy.mjs";
 import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
+import { roundOf32Matches } from "../js/knockout.js";
 
 const credentialsJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 if (!credentialsJson) {
@@ -131,6 +132,8 @@ async function fetchMappedMatches() {
   const mapped = await fetchFromWorldCup26();
   return { mapped, source: "worldcup26.ir", attemptedSources };
 }
+
+await syncMatches(roundOf32Matches);
 
 const storedMatches = await loadStoredMatches();
 const syncDecision = shouldSyncResults(storedMatches);

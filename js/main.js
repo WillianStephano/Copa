@@ -1,5 +1,6 @@
 import { subscribeToAuth } from "./auth.js";
 import { groups, STORAGE_PREFIX, VALID_TABS } from "./data.js";
+import { mergeKnockoutMatches } from "./knockout.js";
 import {
   calculateOfficialStandings,
   calculateStandings
@@ -213,9 +214,15 @@ async function copyText(text) {
 }
 
 function copyTodayPredictions({ button, phase, noGamesMessage, noPredictionsMessage }) {
+  const officialMatches = phase === "knockout"
+    ? {
+        ...state.officialMatches,
+        ...Object.fromEntries(mergeKnockoutMatches(state.officialMatches).map((match) => [match.id, match]))
+      }
+    : state.officialMatches;
   const message = buildTodayPredictionsMessage({
     predictions: state.predictions,
-    officialMatches: state.officialMatches,
+    officialMatches,
     displayName: state.user?.displayName || "",
     phase
   });
@@ -386,13 +393,15 @@ els.knockoutGrid.addEventListener("click", async (event) => {
     ? (Number(homeScore) > Number(awayScore) ? home : away)
     : "";
   const qualifiedTeamId = directQualified || getKnockoutQualifiedTeam(matchId);
+  const officialMatch = state.officialMatches[matchId]
+    || mergeKnockoutMatches(state.officialMatches).find((match) => match.id === matchId);
 
   confirmButton.disabled = true;
   confirmButton.textContent = "Salvando...";
   try {
     await confirmKnockoutPrediction({
       user: state.user,
-      officialMatch: state.officialMatches[matchId],
+      officialMatch,
       matchId,
       home,
       away,

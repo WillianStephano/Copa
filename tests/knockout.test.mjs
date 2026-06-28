@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildKnockoutSkeleton, mergeKnockoutMatches } from "../js/knockout.js";
+import { buildKnockoutSkeleton, mergeKnockoutMatches, roundOf32Matches } from "../js/knockout.js";
 import { renderKnockout, renderKnockoutFilter } from "../js/render.js";
 import { allMatches } from "../js/storage.js";
 
@@ -34,6 +34,17 @@ test("ids do mata-mata nao colidem com jogos da fase de grupos", () => {
   assert.equal(knockoutIds.includes("KO-F-1"), false);
 });
 
+test("16 avos do mata-mata ficam completos com datas para palpite", () => {
+  assert.equal(roundOf32Matches.length, 16);
+  assert.equal(roundOf32Matches[0].id, "KO-R32-1");
+  assert.equal(roundOf32Matches[0].home, "África do Sul");
+  assert.equal(roundOf32Matches[0].away, "Canadá");
+  assert.equal(roundOf32Matches[0].kickoffDate.toISOString(), "2026-06-28T19:00:00.000Z");
+  assert.equal(roundOf32Matches[0].lockAt.toISOString(), "2026-06-28T18:30:00.000Z");
+  assert.equal(roundOf32Matches.at(-1).home, "Colômbia");
+  assert.equal(roundOf32Matches.at(-1).away, "Gana");
+});
+
 test("mata-mata mescla jogo oficial sem perder fase e placeholders", () => {
   const matches = mergeKnockoutMatches({
     "KO-R32-1": {
@@ -50,7 +61,8 @@ test("mata-mata mescla jogo oficial sem perder fase e placeholders", () => {
   assert.equal(matches[0].home, "Brasil");
   assert.equal(matches[0].away, "Japão");
   assert.equal(matches[0].stageTitle, "16 avos de final");
-  assert.equal(matches[1].home, "A definir");
+  assert.equal(matches[1].home, "Brasil");
+  assert.equal(matches[1].away, "Japão");
 });
 
 test("renderKnockout mostra aba com seletor de classificado e regra exclusiva", () => {
@@ -135,7 +147,18 @@ test("filtro do mata-mata mostra jogos de hoje e copiar palpites", () => {
   assert.match(html, /data-knockout-today-filter/);
   assert.match(html, /aria-pressed="true"/);
   assert.match(html, /data-share-knockout-today/);
+  assert.match(html, /4 jogos do mata-mata hoje/);
+});
+
+test("filtro do mata-mata usa confrontos estaticos quando Firestore ainda nao tem jogos", () => {
+  const html = renderKnockoutFilter({
+    knockoutTodayOnly: true,
+    now: new Date("2026-06-28T15:00:00.000Z"),
+    officialMatches: {}
+  });
+
   assert.match(html, /1 jogo do mata-mata hoje/);
+  assert.doesNotMatch(html, /data-share-knockout-today type="button" disabled/);
 });
 
 test("renderKnockout filtra somente jogos do mata-mata de hoje", () => {
@@ -169,7 +192,7 @@ test("renderKnockout filtra somente jogos do mata-mata de hoje", () => {
   });
 
   assert.equal(view.empty, false);
-  assert.match(view.meta, /1 jogo do mata-mata hoje/);
+  assert.match(view.meta, /3 jogos do mata-mata hoje/);
   assert.match(view.html, /Brasil/);
   assert.doesNotMatch(view.html, /Argentina/);
 });

@@ -90,7 +90,7 @@ export function renderGroupFilter(state) {
 }
 
 export function renderKnockoutFilter(state) {
-  const todayCount = Object.values(state.officialMatches).filter((match) =>
+  const todayCount = mergeKnockoutMatches(state.officialMatches).filter((match) =>
     match.phase === "knockout" && isMatchToday(match, state.now)
   ).length;
 
