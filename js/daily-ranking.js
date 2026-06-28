@@ -5,10 +5,21 @@ function scoreDailyDetail(detail, match) {
   return scorePrediction(
     {
       homeScore: detail.predictedHomeScore,
-      awayScore: detail.predictedAwayScore
+      awayScore: detail.predictedAwayScore,
+      qualifiedTeamId: detail.predictedQualifiedTeamId,
+      home: detail.home,
+      away: detail.away
     },
     match
   );
+}
+
+function isDailyExact(score) {
+  return score.type === "exact" || score.type === "knockout-exact-qualified";
+}
+
+function isDailyOutcome(score) {
+  return score.type === "outcome" || score.type === "knockout-qualified";
 }
 
 export function buildDailyRanking(ranking, officialMatches, now = new Date()) {
@@ -24,8 +35,8 @@ export function buildDailyRanking(ranking, officialMatches, now = new Date()) {
         const score = scoreDailyDetail(detail, officialMatches[detail.matchId]);
         return {
           points: total.points + score.points,
-          exactHits: total.exactHits + (score.type === "exact" ? 1 : 0),
-          outcomeHits: total.outcomeHits + (score.type === "outcome" ? 1 : 0),
+          exactHits: total.exactHits + (isDailyExact(score) ? 1 : 0),
+          outcomeHits: total.outcomeHits + (isDailyOutcome(score) ? 1 : 0),
           misses: total.misses + (score.type === "miss" ? 1 : 0)
         };
       }, {

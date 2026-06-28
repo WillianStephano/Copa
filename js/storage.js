@@ -4,8 +4,24 @@ export function scoreKey(groupId, matchIndex, side) {
   return `${STORAGE_PREFIX}score:${groupId}:${matchIndex}:${side}`;
 }
 
+export function knockoutScoreKey(matchId, side) {
+  return `${STORAGE_PREFIX}knockout-score:${matchId}:${side}`;
+}
+
+export function knockoutQualifiedKey(matchId) {
+  return `${STORAGE_PREFIX}knockout-qualified:${matchId}`;
+}
+
 export function getScore(groupId, matchIndex, side) {
   return localStorage.getItem(scoreKey(groupId, matchIndex, side)) || "";
+}
+
+export function getKnockoutScore(matchId, side) {
+  return localStorage.getItem(knockoutScoreKey(matchId, side)) || "";
+}
+
+export function getKnockoutQualifiedTeam(matchId) {
+  return localStorage.getItem(knockoutQualifiedKey(matchId)) || "";
 }
 
 export function setScore(groupId, matchIndex, side, value) {
@@ -17,11 +33,36 @@ export function setScore(groupId, matchIndex, side, value) {
   localStorage.setItem(key, value);
 }
 
+export function setKnockoutScore(matchId, side, value) {
+  const key = knockoutScoreKey(matchId, side);
+  if (value === "") {
+    localStorage.removeItem(key);
+    return;
+  }
+  localStorage.setItem(key, value);
+}
+
+export function setKnockoutQualifiedTeam(matchId, value) {
+  const key = knockoutQualifiedKey(matchId);
+  if (!value) {
+    localStorage.removeItem(key);
+    return;
+  }
+  localStorage.setItem(key, value);
+}
+
 export function clearScores() {
   const keys = [];
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(`${STORAGE_PREFIX}score:`)) {
+    if (
+      key
+      && (
+        key.startsWith(`${STORAGE_PREFIX}score:`)
+        || key.startsWith(`${STORAGE_PREFIX}knockout-score:`)
+        || key.startsWith(`${STORAGE_PREFIX}knockout-qualified:`)
+      )
+    ) {
       keys.push(key);
     }
   }

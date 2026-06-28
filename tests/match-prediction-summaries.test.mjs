@@ -77,3 +77,28 @@ test("inclui pontuação do palpite quando a partida terminou", () => {
   assert.equal(prediction.type, "exact");
   assert.equal(prediction.points, 3);
 });
+
+test("resumo do mata-mata mostra quem passa e pontuacao propria", () => {
+  const summaries = buildMatchPredictionSummaries(
+    [{ uid: "ana", displayName: "Ana" }],
+    [{ uid: "ana", matchId: "R32-1", homeScore: 1, awayScore: 1, qualifiedTeamId: "Brasil" }],
+    new Map([[
+      "R32-1",
+      {
+        phase: "knockout",
+        status: "FINISHED",
+        home: "Brasil",
+        away: "Japão",
+        homeScore: 1,
+        awayScore: 1,
+        qualifiedTeamId: "Brasil"
+      }
+    ]]),
+    new Date("2026-06-29T21:00:00.000Z")
+  );
+  const [prediction] = summaries.get("R32-1").predictions;
+
+  assert.equal(prediction.choiceLabel, "Empate · passa Brasil");
+  assert.equal(prediction.type, "knockout-exact-qualified");
+  assert.equal(prediction.points, 3);
+});

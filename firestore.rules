@@ -24,6 +24,11 @@ service cloud.firestore {
         && request.resource.data.awayScore <= 99;
     }
 
+    function predictionQualifiedTeamIsValid() {
+      return !('qualifiedTeamId' in request.resource.data)
+        || request.resource.data.qualifiedTeamId is string;
+    }
+
     match /users/{uid} {
       allow read, create, update: if signedIn() && request.auth.uid == uid;
       allow delete: if false;
@@ -39,9 +44,11 @@ service cloud.firestore {
       allow create: if ownsPrediction()
         && predictionIsOpen()
         && predictionScoresAreValid()
+        && predictionQualifiedTeamIsValid()
         && request.resource.data.keys().hasOnly([
           'uid', 'matchId', 'groupId', 'matchIndex', 'home', 'away',
-          'homeScore', 'awayScore', 'confirmedAt', 'updatedAt'
+          'phase', 'stage', 'homeScore', 'awayScore', 'qualifiedTeamId',
+          'confirmedAt', 'updatedAt'
         ]);
       allow update: if signedIn()
         && resource.data.uid == request.auth.uid
@@ -49,9 +56,11 @@ service cloud.firestore {
         && request.resource.data.matchId == resource.data.matchId
         && predictionIsOpen()
         && predictionScoresAreValid()
+        && predictionQualifiedTeamIsValid()
         && request.resource.data.keys().hasOnly([
           'uid', 'matchId', 'groupId', 'matchIndex', 'home', 'away',
-          'homeScore', 'awayScore', 'confirmedAt', 'updatedAt'
+          'phase', 'stage', 'homeScore', 'awayScore', 'qualifiedTeamId',
+          'confirmedAt', 'updatedAt'
         ]);
       allow delete: if false;
     }

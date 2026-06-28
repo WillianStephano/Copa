@@ -96,6 +96,8 @@
         type="button">Painel</button>
       <button class="tab-button" role="tab" id="tab-simulator" aria-controls="panel-simulator" data-tab="simulator"
         type="button">Simulador</button>
+      <button class="tab-button" role="tab" id="tab-knockout" aria-controls="panel-knockout" data-tab="knockout"
+        type="button">Mata-mata</button>
       <button class="tab-button" role="tab" id="tab-ranking" aria-controls="panel-ranking" data-tab="ranking"
         type="button">Ranking</button>
       <button class="tab-button" role="tab" id="tab-standings" aria-controls="panel-standings" data-tab="standings"
@@ -141,12 +143,25 @@
         <div class="empty-state" id="simulatorEmpty">Nenhum grupo encontrado para a busca atual.</div>
       </section>
 
+      <section class="tab-panel" id="panel-knockout" role="tabpanel" aria-labelledby="tab-knockout"
+        data-panel="knockout">
+        <div class="section-head">
+          <div>
+            <h2>Mata-mata</h2>
+            <p>16 avos, oitavas, quartas, semifinais, 3º lugar e final. Regra exclusiva: placar + classificado.</p>
+          </div>
+          <p class="meta-line" id="knockoutMeta"></p>
+        </div>
+        <div class="knockout-board" id="knockoutGrid"></div>
+        <div class="empty-state" id="knockoutEmpty">Nenhum jogo de mata-mata encontrado para a busca atual.</div>
+      </section>
+
       <section class="tab-panel" id="panel-ranking" role="tabpanel" aria-labelledby="tab-ranking"
         data-panel="ranking">
         <div class="section-head">
           <div>
             <h2>Ranking geral</h2>
-            <p>Placar exato vale 3 pontos. Acertar o vencedor ou empate vale 2 pontos.</p>
+            <p>Grupos: placar exato 3; vencedor/empate 2. Mata-mata: regra própria por classificado.</p>
           </div>
           <p class="meta-line" id="rankingMeta"></p>
         </div>
@@ -210,8 +225,11 @@
           <article class="info-panel">
             <h3>Criterios</h3>
             <ul>
-              <li>Placar exato vale 3 pontos.</li>
-              <li>Acertar vencedor ou empate vale 2 pontos.</li>
+              <li>Fase de grupos: placar exato vale 3 pontos.</li>
+              <li>Fase de grupos: acertar vencedor ou empate vale 2 pontos.</li>
+              <li>Mata-mata: placar exato e classificado vale 3 pontos.</li>
+              <li>Mata-mata: errou o placar, mas acertou quem passou, vale 2 pontos.</li>
+              <li>Mata-mata: acertou empate, mas errou quem passou, vale 1 ponto.</li>
               <li>O ranking é geral entre todos os usuários.</li>
               <li>Desempate por placares exatos e depois acertos de resultado.</li>
             </ul>

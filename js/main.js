@@ -4,10 +4,17 @@ import {
   calculateOfficialStandings,
   calculateStandings
 } from "./standings.js";
-import { clearScores, setScore } from "./storage.js";
+import {
+  clearScores,
+  getKnockoutQualifiedTeam,
+  setKnockoutQualifiedTeam,
+  setKnockoutScore,
+  setScore
+} from "./storage.js";
 import {
   renderCalendar,
   renderGroupFilter,
+  renderKnockout,
   renderOverview,
   renderRanking,
   renderSimulator,
@@ -15,6 +22,7 @@ import {
   renderSyncStatus
 } from "./render.js";
 import {
+  confirmKnockoutPrediction,
   confirmPrediction,
   subscribeToMatchPredictionSummaries,
   subscribeToOfficialMatches,
@@ -65,6 +73,9 @@ const els = {
   dailyLeaders: document.getElementById("dailyLeaders"),
   dashboardMetrics: document.getElementById("dashboardMetrics"),
   simulatorEmpty: document.getElementById("simulatorEmpty"),
+  knockoutGrid: document.getElementById("knockoutGrid"),
+  knockoutEmpty: document.getElementById("knockoutEmpty"),
+  knockoutMeta: document.getElementById("knockoutMeta"),
   standingsEmpty: document.getElementById("standingsEmpty"),
   calendarEmpty: document.getElementById("calendarEmpty"),
   simulatorMeta: document.getElementById("simulatorMeta"),
@@ -80,6 +91,7 @@ const els = {
 const TAB_LABELS = {
   overview: "Painel",
   simulator: "Simulador",
+  knockout: "Mata-mata",
   ranking: "Ranking",
   standings: "Classificação",
   calendar: "Jogos",
@@ -141,6 +153,11 @@ function renderAll() {
   els.simulatorEmpty.classList.toggle("active", simulator.empty);
   els.simulatorEmpty.textContent = simulator.emptyMessage;
   els.simulatorMeta.textContent = `${simulator.meta} · ${syncStatusText}`;
+
+  const knockout = renderKnockout(state);
+  els.knockoutGrid.innerHTML = knockout.html;
+  els.knockoutEmpty.classList.toggle("active", knockout.empty);
+  els.knockoutMeta.textContent = `${knockout.meta} · ${syncStatusText}`;
 
   const standingsView = renderStandings(state, officialStandings);
   els.standingsGrid.innerHTML = standingsView.html;
@@ -320,7 +337,59 @@ els.groupsGrid.addEventListener("click", async (event) => {
   renderAll();
 });
 
+els.knockoutGrid.addEventListener("click", async (event) => {
+  const confirmButton = event.target.closest("[data-confirm-knockout-prediction]");
+  if (!confirmButton) return;
+
+  const matchId = confirmButton.dataset.confirmKnockoutPrediction;
+  const matchBlock = confirmButton.closest("[data-knockout-match]");
+  const home = matchBlock?.dataset.home || "";
+  const away = matchBlock?.dataset.away || "";
+  const homeInput = matchBlock?.querySelector(`[data-knockout-score="${matchId}:home"]`);
+  const awayInput = matchBlock?.querySelector(`[data-knockout-score="${matchId}:away"]`);
+  const homeScore = homeInput?.value || "";
+  const awayScore = awayInput?.value || "";
+  const directQualified = homeScore !== "" && awayScore !== "" && Number(homeScore) !== Number(awayScore)
+    ? (Number(homeScore) > Number(awayScore) ? home : away)
+    : "";
+  const qualifiedTeamId = directQualified || getKnockoutQualifiedTeam(matchId);
+
+  confirmButton.disabled = true;
+  confirmButton.textContent = "Salvando...";
+  try {
+    await confirmKnockoutPrediction({
+      user: state.user,
+      officialMatch: state.officialMatches[matchId],
+      matchId,
+      home,
+      away,
+      homeScore,
+      awayScore,
+      qualifiedTeamId
+    });
+    showToast("Palpite do mata-mata confirmado!");
+  } catch (error) {
+    showToast(error.message || "Não foi possível confirmar o palpite.");
+    renderAll();
+  }
+});
+
 document.addEventListener("input", (event) => {
+  const knockoutInput = event.target.closest("[data-knockout-score]");
+  if (knockoutInput) {
+    const [matchId, side] = knockoutInput.dataset.knockoutScore.split(":");
+    const sanitized = sanitizeScore(knockoutInput.value);
+    knockoutInput.value = sanitized;
+    setKnockoutScore(matchId, side, sanitized);
+    renderAll();
+    const restoredInput = document.querySelector(`[data-knockout-score="${matchId}:${side}"]`);
+    if (restoredInput) {
+      restoredInput.focus();
+      restoredInput.classList.add("score-pulse");
+    }
+    return;
+  }
+
   const input = event.target.closest("[data-score]");
   if (!input) return;
   const [groupId, index, side] = input.dataset.score.split(":");
@@ -333,6 +402,13 @@ document.addEventListener("input", (event) => {
     restoredInput.focus();
     restoredInput.classList.add("score-pulse");
   }
+});
+
+document.addEventListener("change", (event) => {
+  const qualifiedInput = event.target.closest("[data-knockout-qualified]");
+  if (!qualifiedInput) return;
+  setKnockoutQualifiedTeam(qualifiedInput.dataset.knockoutQualified, qualifiedInput.value);
+  renderAll();
 });
 
 els.search.addEventListener("input", (event) => {
@@ -390,6 +466,12 @@ subscribeToAuth((user) => {
   unsubscribePredictions = subscribeToPredictions(user.uid, (predictions) => {
     state.predictions = predictions;
     Object.values(predictions).forEach((prediction) => {
+      if (prediction.phase === "knockout") {
+        setKnockoutScore(prediction.matchId, "home", String(prediction.homeScore));
+        setKnockoutScore(prediction.matchId, "away", String(prediction.awayScore));
+        setKnockoutQualifiedTeam(prediction.matchId, prediction.qualifiedTeamId || "");
+        return;
+      }
       setScore(prediction.groupId, prediction.matchIndex, "home", String(prediction.homeScore));
       setScore(prediction.groupId, prediction.matchIndex, "away", String(prediction.awayScore));
     });

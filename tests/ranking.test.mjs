@@ -178,3 +178,28 @@ test("ranking quebra sequencia quando usuario erra ou nao palpita jogo encerrado
   assert.equal(entry.bestStreak, 1);
 });
 
+test("ranking soma grupos e mata-mata com regras segregadas", () => {
+  const users = [{ uid: "ana", displayName: "Ana" }];
+  const predictions = [
+    { uid: "ana", matchId: "A-0", homeScore: 2, awayScore: 1 },
+    { uid: "ana", matchId: "R32-1", homeScore: 1, awayScore: 1, qualifiedTeamId: "Brasil" },
+    { uid: "ana", matchId: "R32-2", homeScore: 0, awayScore: 0, qualifiedTeamId: "Japão" }
+  ];
+  const matches = new Map([
+    ["A-0", { phase: "group", status: "FINISHED", homeScore: 3, awayScore: 2, kickoffAt: new Date("2026-06-20T18:00:00.000Z") }],
+    ["R32-1", { phase: "knockout", status: "FINISHED", home: "Brasil", away: "Japão", homeScore: 2, awayScore: 1, qualifiedTeamId: "Brasil", kickoffAt: new Date("2026-06-29T18:00:00.000Z") }],
+    ["R32-2", { phase: "knockout", status: "FINISHED", home: "Argentina", away: "França", homeScore: 1, awayScore: 1, qualifiedTeamId: "França", kickoffAt: new Date("2026-06-30T18:00:00.000Z") }]
+  ]);
+
+  const [entry] = buildRanking(users, predictions, matches);
+  const details = buildRankingDetails(predictions, matches).get("ana");
+
+  assert.equal(entry.points, 5);
+  assert.equal(entry.exactHits, 0);
+  assert.equal(entry.outcomeHits, 2);
+  assert.equal(entry.misses, 1);
+  assert.equal(details[1].type, "knockout-qualified");
+  assert.equal(details[2].type, "knockout-draw-only");
+  assert.equal(details[2].points, 1);
+});
+

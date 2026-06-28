@@ -1073,6 +1073,17 @@
       background: var(--mint-200);
     }
 
+    .public-prediction.result-knockout-exact-qualified .public-prediction-status {
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.5);
+    }
+
+    .public-prediction.result-knockout-qualified .public-prediction-status,
+    .public-prediction.result-knockout-draw-only .public-prediction-status {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
     .public-prediction.result-miss .public-prediction-status {
       color: #8f242a;
       background: #ffe0e1;
@@ -1106,6 +1117,17 @@
     }
 
     .official-result.result-outcome {
+      border-left-color: var(--green-700);
+      background: var(--mint-100);
+    }
+
+    .official-result.result-knockout-exact-qualified {
+      border-left-color: var(--gold-500);
+      background: linear-gradient(90deg, #fff8d8, #f4fbf7);
+    }
+
+    .official-result.result-knockout-qualified,
+    .official-result.result-knockout-draw-only {
       border-left-color: var(--green-700);
       background: var(--mint-100);
     }
@@ -1174,6 +1196,146 @@
     .result-none .points-earned {
       color: var(--muted);
       background: #e0e7e4;
+    }
+
+    .result-knockout-exact-qualified .points-earned {
+      color: var(--blue-900);
+      background: var(--gold-500);
+    }
+
+    .result-knockout-qualified .points-earned,
+    .result-knockout-draw-only .points-earned {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .knockout-board {
+      display: grid;
+      gap: 18px;
+    }
+
+    .knockout-stage {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid rgba(220, 233, 228, 0.95);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(232, 246, 239, 0.78)),
+        radial-gradient(circle at top right, rgba(245, 197, 66, 0.16), transparent 38%);
+      box-shadow: 0 10px 28px rgba(18, 33, 30, 0.06);
+    }
+
+    .knockout-stage-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .knockout-stage-head h3 {
+      margin: 0;
+      color: var(--green-900);
+      font-family: var(--font-display);
+      font-size: 1.22rem;
+    }
+
+    .knockout-stage-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .knockout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    .knockout-match {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 8px 18px rgba(18, 33, 30, 0.05);
+    }
+
+    .knockout-match.has-confirmed-prediction {
+      border-color: rgba(8, 112, 87, 0.42);
+      box-shadow: inset 4px 0 0 var(--green-700);
+    }
+
+    .knockout-match-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(220, 233, 228, 0.88);
+      color: var(--muted);
+      background: rgba(244, 251, 247, 0.86);
+      font-size: 0.74rem;
+      font-weight: 900;
+    }
+
+    .knockout-row {
+      grid-template-columns: 62px minmax(0, 1fr) 78px minmax(0, 1fr);
+      padding: 10px;
+    }
+
+    .qualified-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 0;
+      border-top: 1px solid rgba(220, 233, 228, 0.82);
+      background: rgba(255, 254, 248, 0.72);
+    }
+
+    .qualified-picker legend {
+      grid-column: 1 / -1;
+      padding: 0;
+      color: var(--green-900);
+      font-size: 0.74rem;
+      font-weight: 900;
+    }
+
+    .qualified-picker label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.82);
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .qualified-picker label.selected {
+      color: var(--green-900);
+      border-color: rgba(8, 112, 87, 0.42);
+      background: var(--mint-100);
+    }
+
+    .qualified-picker input {
+      accent-color: var(--green-800);
+    }
+
+    .knockout-pending {
+      margin: 0;
+      padding: 12px;
+      border-top: 1px dashed var(--line);
+      color: var(--muted);
+      background: rgba(244, 251, 247, 0.74);
+      font-size: 0.78rem;
+      font-weight: 800;
+      line-height: 1.45;
     }
 
     .prediction-deadline {
@@ -2223,6 +2385,26 @@
       .match-row {
         grid-template-columns: 44px minmax(0, 1fr) 68px minmax(0, 1fr);
         gap: 6px;
+      }
+
+      .knockout-stage {
+        padding: 12px;
+      }
+
+      .knockout-stage-head {
+        display: grid;
+      }
+
+      .knockout-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .knockout-row {
+        grid-template-columns: 48px minmax(0, 1fr) 68px minmax(0, 1fr);
+      }
+
+      .qualified-picker {
+        grid-template-columns: 1fr;
       }
 
       .official-result {

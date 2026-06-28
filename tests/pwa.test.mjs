@@ -20,12 +20,14 @@ test("index declara manifest, icone e menu mobile", () => {
   assert.match(html, /id="installAppBtn"/);
   assert.match(html, /id="mobileNavToggle"/);
   assert.match(html, /id="mainTabs"/);
+  assert.match(html, /data-tab="knockout"/);
+  assert.match(html, /id="knockoutGrid"/);
 });
 
 test("service worker guarda o shell principal em cache", () => {
   const serviceWorker = readFileSync("sw.js", "utf8");
 
-  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v4"/);
+  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v5"/);
   assert.match(serviceWorker, /\.\/index\.html/);
   assert.match(serviceWorker, /\.\/css\/app\.css/);
   assert.match(serviceWorker, /\.\/js\/main\.js/);

@@ -1,9 +1,17 @@
 import { flagCodes, groups, matchVenues } from "./data.js";
 import { buildDailyRanking } from "./daily-ranking.js";
-import { allGroupIds, allMatches, getScore } from "./storage.js";
+import { mergeKnockoutMatches } from "./knockout.js";
+import {
+  allGroupIds,
+  allMatches,
+  getKnockoutQualifiedTeam,
+  getKnockoutScore,
+  getScore
+} from "./storage.js";
 import {
   getPredictionFeedback,
   getPredictionLockTime,
+  inferredQualifiedTeam,
   isPredictionLocked
 } from "./scoring.js";
 import { isMatchToday } from "./match-date.js";
@@ -188,12 +196,23 @@ function renderPublicPrediction(prediction) {
   const choice = ["home", "draw", "away"].includes(prediction.choice)
     ? prediction.choice
     : "draw";
-  const resultType = ["exact", "outcome", "miss", "pending"].includes(prediction.type)
+  const resultType = [
+    "exact",
+    "outcome",
+    "knockout-exact-qualified",
+    "knockout-qualified",
+    "knockout-draw-only",
+    "miss",
+    "pending"
+  ].includes(prediction.type)
     ? prediction.type
     : "pending";
   const statusLabels = {
     exact: "Placar exato",
     outcome: "Resultado correto",
+    "knockout-exact-qualified": "Placar + classificado",
+    "knockout-qualified": "Classificado correto",
+    "knockout-draw-only": "Empate correto",
     miss: "Errou",
     pending: "Aguardando resultado"
   };
@@ -210,7 +229,7 @@ function renderPublicPrediction(prediction) {
       <strong>${prediction.homeScore} x ${prediction.awayScore}</strong>
       <span>${safeChoice}</span>
     </div>
-    <span class="public-prediction-status">${statusLabels[resultType]} · ${pointsLabel}</span>
+    <span class="public-prediction-status">${statusLabels[resultType] || statusLabels.pending} · ${pointsLabel}</span>
   </div>`;
 }
 
@@ -331,6 +350,160 @@ export function renderSimulator(state, standings) {
     meta: state.todayOnly
       ? `${visibleTodayCount} jogo${visibleTodayCount === 1 ? "" : "s"} hoje · horário de Brasília`
       : `${visibleGroups.length} de ${allGroupIds().length} grupos visíveis`
+  };
+}
+
+function formatKnockoutKickoff(match) {
+  const date = match?.kickoffDate || match?.kickoffAt;
+  if (!date) return "Aguardando horário oficial";
+  const kickoff = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(kickoff.getTime())) return "Aguardando horário oficial";
+  return kickoff.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderQualifiedPicker(match, home, away, selectedTeam, locked, completed) {
+  const predictedHome = Number(getKnockoutScore(match.id, "home"));
+  const predictedAway = Number(getKnockoutScore(match.id, "away"));
+  const hasDirectWinner = Number.isInteger(predictedHome)
+    && Number.isInteger(predictedAway)
+    && predictedHome !== predictedAway;
+  const autoTeam = hasDirectWinner
+    ? (predictedHome > predictedAway ? home : away)
+    : "";
+  const value = autoTeam || selectedTeam;
+  const disabled = locked || !completed || hasDirectWinner;
+
+  return `<fieldset class="qualified-picker">
+    <legend>${hasDirectWinner ? "Classificado pelo seu placar" : "Se empatar, quem passa?"}</legend>
+    <label class="${value === home ? "selected" : ""}">
+      <input type="radio" name="qualified-${match.id}" value="${escapeHtml(home)}" data-knockout-qualified="${match.id}" ${value === home ? "checked" : ""} ${disabled ? "disabled" : ""}>
+      <span>${escapeHtml(home)}</span>
+    </label>
+    <label class="${value === away ? "selected" : ""}">
+      <input type="radio" name="qualified-${match.id}" value="${escapeHtml(away)}" data-knockout-qualified="${match.id}" ${value === away ? "checked" : ""} ${disabled ? "disabled" : ""}>
+      <span>${escapeHtml(away)}</span>
+    </label>
+  </fieldset>`;
+}
+
+function renderKnockoutCard(state, match) {
+  const prediction = state.predictions[match.id];
+  const home = match.home || match.homePlaceholder || "A definir";
+  const away = match.away || match.awayPlaceholder || "A definir";
+  const teamsReady = home !== "A definir" && away !== "A definir";
+  const homeScore = getKnockoutScore(match.id, "home") || (prediction ? String(prediction.homeScore) : "");
+  const awayScore = getKnockoutScore(match.id, "away") || (prediction ? String(prediction.awayScore) : "");
+  const selectedQualified = getKnockoutQualifiedTeam(match.id)
+    || (prediction ? inferredQualifiedTeam(prediction, home, away) : "");
+  const completed = homeScore !== "" && awayScore !== "";
+  const locked = match?.kickoffDate ? isPredictionLocked(match.kickoffDate) : false;
+  const lockTime = match?.kickoffDate ? getPredictionLockTime(match.kickoffDate) : null;
+  const directQualified = completed && Number(homeScore) !== Number(awayScore)
+    ? (Number(homeScore) > Number(awayScore) ? home : away)
+    : "";
+  const draftQualified = directQualified || selectedQualified;
+  const confirmedMatchesDraft = prediction
+    && Number(homeScore) === Number(prediction.homeScore)
+    && Number(awayScore) === Number(prediction.awayScore)
+    && draftQualified === inferredQualifiedTeam(prediction, home, away);
+  const canConfirm = teamsReady
+    && match?.kickoffDate
+    && !locked
+    && completed
+    && Boolean(draftQualified)
+    && !confirmedMatchesDraft;
+  const buttonLabel = prediction
+    ? (confirmedMatchesDraft ? "Palpite confirmado" : "Atualizar palpite")
+    : "Confirmar palpite";
+  const deadlineText = !teamsReady
+    ? "Confronto ainda indefinido"
+    : match?.kickoffDate
+      ? (locked ? "Palpite encerrado" : `Até ${lockTime.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}`)
+      : "Aguardando horário oficial";
+  const officialResultHtml = renderOfficialResult(
+    { ...match, phase: "knockout", home, away },
+    prediction,
+    home,
+    away
+  );
+  const publicPredictionsHtml = renderMatchPredictionPanel(
+    state.matchPredictionSummaries?.[match.id],
+    { ...match, phase: "knockout" },
+    home,
+    away
+  );
+
+  return `<article class="knockout-match ${prediction ? "has-confirmed-prediction" : ""} ${officialResultHtml ? "has-official-result" : ""}" data-knockout-match="${match.id}" data-home="${escapeHtml(home)}" data-away="${escapeHtml(away)}">
+    <div class="knockout-match-head">
+      <span class="badge">${match.stageTitle}</span>
+      <span>${formatKnockoutKickoff(match)}</span>
+    </div>
+    <div class="match-row knockout-row ${completed ? "completed" : ""}">
+      <span class="match-date">${match.id}</span>
+      ${renderTeam(home, "home")}
+      <div class="score-inputs">
+        <input class="${homeScore !== "" ? "filled" : ""}" aria-label="${home} contra ${away}, gols de ${home}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${homeScore}" data-knockout-score="${match.id}:home" ${locked || !teamsReady ? "disabled" : ""}>
+        <input class="${awayScore !== "" ? "filled" : ""}" aria-label="${home} contra ${away}, gols de ${away}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="${awayScore}" data-knockout-score="${match.id}:away" ${locked || !teamsReady ? "disabled" : ""}>
+      </div>
+      ${renderTeam(away)}
+    </div>
+    ${teamsReady ? renderQualifiedPicker(match, home, away, draftQualified, locked, completed) : `<p class="knockout-pending">Assim que o chaveamento oficial sair, este confronto será liberado para palpite.</p>`}
+    ${officialResultHtml}
+    ${publicPredictionsHtml}
+    <div class="prediction-actions">
+      <span class="prediction-deadline ${locked ? "locked" : ""}">${deadlineText}</span>
+      <button class="confirm-prediction ${confirmedMatchesDraft ? "confirmed" : ""}" type="button" data-confirm-knockout-prediction="${match.id}" ${canConfirm ? "" : "disabled"}>${buttonLabel}</button>
+    </div>
+  </article>`;
+}
+
+export function renderKnockout(state) {
+  const matches = mergeKnockoutMatches(state.officialMatches);
+  const query = normalize(state.query);
+  const visibleMatches = matches.filter((match) => {
+    const haystack = normalize([
+      match.id,
+      match.stageTitle,
+      match.home,
+      match.away,
+      match.homePlaceholder,
+      match.awayPlaceholder
+    ].join(" "));
+    return !query || haystack.includes(query);
+  });
+  const stages = visibleMatches.reduce((map, match) => {
+    const list = map.get(match.stage) || [];
+    list.push(match);
+    map.set(match.stage, list);
+    return map;
+  }, new Map());
+  const html = Array.from(stages.entries()).map(([, stageMatches]) => {
+    const [first] = stageMatches;
+    return `<section class="knockout-stage">
+      <div class="knockout-stage-head">
+        <div>
+          <h3>${first.stageTitle}</h3>
+          <p>Palpite de placar + classificado. Regra exclusiva do mata-mata.</p>
+        </div>
+        <span class="badge">${stageMatches.length} jogo${stageMatches.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="knockout-grid">
+        ${stageMatches.map((match) => renderKnockoutCard(state, match)).join("")}
+      </div>
+    </section>`;
+  }).join("");
+
+  const synced = matches.filter((match) => match.kickoffDate || match.kickoffAt).length;
+  return {
+    html,
+    empty: visibleMatches.length === 0,
+    meta: `${synced}/${matches.length} jogos com horário oficial`
   };
 }
 
@@ -549,8 +722,12 @@ export function renderRanking(ranking, currentUid) {
       : `<span class="ranking-avatar fallback" aria-hidden="true">${safeName.charAt(0).toUpperCase()}</span>`;
 
     const details = Array.isArray(entry.details) ? entry.details : [];
-    const exactCount = details.filter((detail) => detail.type === "exact").length;
-    const outcomeCount = details.filter((detail) => detail.type === "outcome").length;
+    const exactCount = details.filter((detail) =>
+      detail.type === "exact" || detail.type === "knockout-exact-qualified"
+    ).length;
+    const outcomeCount = details.filter((detail) =>
+      detail.type === "outcome" || detail.type === "knockout-qualified"
+    ).length;
     const missCount = details.filter((detail) => detail.type === "miss").length;
     const detailRows = details.length
       ? details.map(renderRankingDetail).join("")
@@ -643,11 +820,13 @@ function renderUserComparison(currentEntry, targetEntry, currentUid) {
   const targetName = escapeHtml(targetEntry.displayName || "Participante");
   const totals = targetDetails.reduce((total, targetDetail) => {
     const currentDetail = currentDetails.get(targetDetail.matchId);
+    const currentExactHit = currentDetail.type === "exact" || currentDetail.type === "knockout-exact-qualified";
+    const targetExactHit = targetDetail.type === "exact" || targetDetail.type === "knockout-exact-qualified";
     return {
       currentPoints: total.currentPoints + (Number(currentDetail.points) || 0),
       targetPoints: total.targetPoints + (Number(targetDetail.points) || 0),
-      currentExact: total.currentExact + (currentDetail.type === "exact" ? 1 : 0),
-      targetExact: total.targetExact + (targetDetail.type === "exact" ? 1 : 0)
+      currentExact: total.currentExact + (currentExactHit ? 1 : 0),
+      targetExact: total.targetExact + (targetExactHit ? 1 : 0)
     };
   }, {
     currentPoints: 0,
@@ -689,18 +868,31 @@ function renderRankingDetail(detail) {
   const labels = {
     exact: "Placar exato",
     outcome: "Resultado correto",
+    "knockout-exact-qualified": "Placar + classificado",
+    "knockout-qualified": "Classificado correto",
+    "knockout-draw-only": "Empate correto",
     miss: "Errou"
   };
   const safeHome = escapeHtml(detail.home || "");
   const safeAway = escapeHtml(detail.away || "");
-  const type = ["exact", "outcome", "miss"].includes(detail.type)
+  const type = [
+    "exact",
+    "outcome",
+    "knockout-exact-qualified",
+    "knockout-qualified",
+    "knockout-draw-only",
+    "miss"
+  ].includes(detail.type)
     ? detail.type
     : "miss";
+  const qualifiedText = detail.predictedQualifiedTeamId
+    ? ` · passa ${escapeHtml(detail.predictedQualifiedTeamId)}`
+    : "";
 
   return `<div class="ranking-detail result-${type}">
     <div class="ranking-detail-match">
       <strong>${safeHome} x ${safeAway}</strong>
-      <span>Palpite: ${detail.predictedHomeScore} x ${detail.predictedAwayScore}</span>
+      <span>Palpite: ${detail.predictedHomeScore} x ${detail.predictedAwayScore}${qualifiedText}</span>
     </div>
     <div class="ranking-detail-result">
       <span>Resultado oficial</span>

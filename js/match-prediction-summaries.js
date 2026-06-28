@@ -55,11 +55,12 @@ export function isMatchPredictionSummaryPublic(match, now = new Date()) {
 }
 
 export function buildChoiceLabel(choice, match, prediction) {
-  if (choice === "draw") return "Empate";
+  const qualified = prediction.qualifiedTeamId || prediction.qualifiedTeam;
+  if (choice === "draw") return qualified ? `Empate · passa ${qualified}` : "Empate";
   const team = choice === "home"
     ? (match.home || prediction.home || "mandante")
     : (match.away || prediction.away || "visitante");
-  return `Vitória ${team}`;
+  return match.phase === "knockout" ? `${team} passa` : `Vitória ${team}`;
 }
 
 export function buildMatchPredictionSummaries(users, predictions, matches, now = new Date()) {
@@ -104,6 +105,7 @@ export function buildMatchPredictionSummaries(users, predictions, matches, now =
         photoURL: participant.photoURL,
         homeScore: Number(prediction.homeScore),
         awayScore: Number(prediction.awayScore),
+        qualifiedTeamId: prediction.qualifiedTeamId || "",
         choice,
         choiceLabel: buildChoiceLabel(choice, match, prediction),
         points: score.points,

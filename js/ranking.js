@@ -41,6 +41,18 @@ function buildPredictionIndex(predictions) {
   return index;
 }
 
+export function isExactHit(score) {
+  return score?.type === "exact" || score?.type === "knockout-exact-qualified";
+}
+
+export function isOutcomeHit(score) {
+  return score?.type === "outcome" || score?.type === "knockout-qualified";
+}
+
+export function isStreakHit(score) {
+  return isExactHit(score) || isOutcomeHit(score);
+}
+
 export function calculateHitStreak(uid, predictionsByUserMatch, finishedMatches) {
   let currentStreak = 0;
   let bestStreak = 0;
@@ -48,7 +60,7 @@ export function calculateHitStreak(uid, predictionsByUserMatch, finishedMatches)
   finishedMatches.forEach(({ matchId, match }) => {
     const prediction = predictionsByUserMatch.get(`${uid}:${matchId}`);
     const score = prediction ? scorePrediction(prediction, match) : { type: "miss" };
-    const isHit = score.type === "exact" || score.type === "outcome";
+    const isHit = isStreakHit(score);
 
     if (!isHit) {
       currentStreak = 0;
@@ -72,7 +84,9 @@ export function buildRankingDetails(predictions, matches) {
 
     const score = scorePrediction(prediction, match);
     const userDetails = details.get(prediction.uid) || [];
-    userDetails.push({
+    const predictedQualifiedTeamId = prediction.qualifiedTeamId || prediction.qualifiedTeam || "";
+    const qualifiedTeamId = match.qualifiedTeamId || match.qualifiedTeam || "";
+    const detail = {
       matchId: prediction.matchId,
       home: match.home || prediction.home,
       away: match.away || prediction.away,
@@ -83,7 +97,10 @@ export function buildRankingDetails(predictions, matches) {
       points: score.points,
       type: score.type,
       matchTime: matchDateTime(match)
-    });
+    };
+    if (predictedQualifiedTeamId) detail.predictedQualifiedTeamId = predictedQualifiedTeamId;
+    if (qualifiedTeamId) detail.qualifiedTeamId = qualifiedTeamId;
+    userDetails.push(detail);
     details.set(prediction.uid, userDetails);
   });
 
@@ -142,8 +159,8 @@ export function buildRanking(users, predictions, matches) {
     const score = scorePrediction(prediction, match);
     entry.points += score.points;
     entry.scoredPredictions += 1;
-    if (score.type === "exact") entry.exactHits += 1;
-    else if (score.type === "outcome") entry.outcomeHits += 1;
+    if (isExactHit(score)) entry.exactHits += 1;
+    else if (isOutcomeHit(score)) entry.outcomeHits += 1;
     else entry.misses += 1;
     entries.set(prediction.uid, entry);
   });

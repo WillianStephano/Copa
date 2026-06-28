@@ -119,3 +119,53 @@ export async function confirmPrediction({ user, officialMatch, groupId, index, h
     updatedAt: serverTimestamp()
   });
 }
+
+export async function confirmKnockoutPrediction({
+  user,
+  officialMatch,
+  matchId,
+  home,
+  away,
+  homeScore,
+  awayScore,
+  qualifiedTeamId
+}) {
+  if (!user) throw new Error("Faça login para confirmar o palpite.");
+  if (!officialMatch?.kickoffDate) throw new Error("O horário oficial deste jogo ainda não foi sincronizado.");
+  if (isPredictionLocked(officialMatch.kickoffDate)) {
+    throw new Error("O prazo para alterar este palpite já encerrou.");
+  }
+
+  const parsedHome = Number(homeScore);
+  const parsedAway = Number(awayScore);
+  if (![parsedHome, parsedAway].every((score) => Number.isInteger(score) && score >= 0 && score <= 99)) {
+    throw new Error("Preencha os dois placares antes de confirmar.");
+  }
+
+  const validQualifiedTeams = [home, away].filter(Boolean);
+  if (!validQualifiedTeams.includes(qualifiedTeamId)) {
+    throw new Error("Escolha quem classifica no mata-mata.");
+  }
+
+  if (parsedHome > parsedAway && qualifiedTeamId !== home) {
+    throw new Error("Se o mandante venceu no seu palpite, ele precisa ser o classificado.");
+  }
+
+  if (parsedAway > parsedHome && qualifiedTeamId !== away) {
+    throw new Error("Se o visitante venceu no seu palpite, ele precisa ser o classificado.");
+  }
+
+  await setDoc(doc(db, "predictions", `${user.uid}_${matchId}`), {
+    uid: user.uid,
+    matchId,
+    phase: "knockout",
+    stage: officialMatch.stage || "",
+    home,
+    away,
+    homeScore: parsedHome,
+    awayScore: parsedAway,
+    qualifiedTeamId,
+    confirmedAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+}

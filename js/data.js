@@ -1,6 +1,6 @@
 export const STORAGE_PREFIX = "copa2026:";
 
-export const VALID_TABS = ["overview", "simulator", "ranking", "standings", "calendar", "rules"];
+export const VALID_TABS = ["overview", "simulator", "knockout", "ranking", "standings", "calendar", "rules"];
 
 export const flagCodes = {
   "México": "mx",
