@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  inferQualifiedTeam,
   parseAdminArgs,
   parseScore,
   requireSetOptions
@@ -41,4 +42,45 @@ test("exige identificação, jogo, placar e justificativa", () => {
     score: "2x1",
     reason: "Palpite informado antes da partida"
   }));
+});
+
+test("valida classificado administrativo do mata-mata", () => {
+  assert.equal(
+    inferQualifiedTeam({
+      homeScore: 1,
+      awayScore: 1,
+      home: "África do Sul",
+      away: "Canadá",
+      qualified: "Canadá"
+    }),
+    "Canadá"
+  );
+  assert.equal(
+    inferQualifiedTeam({
+      homeScore: 2,
+      awayScore: 0,
+      home: "África do Sul",
+      away: "Canadá"
+    }),
+    "África do Sul"
+  );
+  assert.throws(
+    () => inferQualifiedTeam({
+      homeScore: 1,
+      awayScore: 1,
+      home: "África do Sul",
+      away: "Canadá"
+    }),
+    /--qualified/
+  );
+  assert.throws(
+    () => inferQualifiedTeam({
+      homeScore: 2,
+      awayScore: 0,
+      home: "África do Sul",
+      away: "Canadá",
+      qualified: "Canadá"
+    }),
+    /classificado deve ser África do Sul/
+  );
 });

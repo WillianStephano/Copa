@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import {
+  inferQualifiedTeam,
   parseAdminArgs,
   parseScore,
   requireSetOptions
@@ -13,6 +14,7 @@ Uso:
   npm run admin:prediction -- list-users --service-account CAMINHO
   npm run admin:prediction -- list-matches --service-account CAMINHO
   npm run admin:prediction -- set --service-account CAMINHO --email EMAIL --match A-0 --score 2x1 --reason "Justificativa"
+  npm run admin:prediction -- set --service-account CAMINHO --email EMAIL --match KO-R32-1 --score 1x1 --qualified "Canadá" --reason "Justificativa"
 
 Também é possível usar --uid no lugar de --email.
 `;
@@ -76,13 +78,14 @@ async function listUsers(db) {
 }
 
 async function listFinishedMatches(db) {
-  const snapshot = await db
-    .collection("matches")
-    .where("status", "==", "FINISHED")
-    .get();
+  const snapshot = await db.collection("matches").get();
   const matches = snapshot.docs
     .map((item) => ({ id: item.id, ...item.data() }))
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .filter((match) => match.status === "FINISHED" || match.phase === "knockout")
+    .sort((a, b) =>
+      Number(a.sourceMatchNumber || 0) - Number(b.sourceMatchNumber || 0)
+      || a.id.localeCompare(b.id)
+    );
 
   if (!matches.length) {
     console.log("Nenhuma partida encerrada encontrada.");
@@ -91,8 +94,11 @@ async function listFinishedMatches(db) {
 
   console.table(matches.map((match) => ({
     id: match.id,
+    fase: match.phase === "knockout" ? (match.stage || "mata-mata") : "grupo",
     jogo: `${match.home} x ${match.away}`,
-    resultado: `${match.homeScore} x ${match.awayScore}`
+    resultado: Number.isInteger(match.homeScore) && Number.isInteger(match.awayScore)
+      ? `${match.homeScore} x ${match.awayScore}`
+      : "A disputar"
   })));
 }
 
@@ -110,15 +116,23 @@ async function setPrediction(db, options) {
   }
 
   const match = matchSnapshot.data();
+  const isKnockout = match.phase === "knockout";
+  const qualifiedTeamId = isKnockout
+    ? inferQualifiedTeam({
+        homeScore,
+        awayScore,
+        home: match.home,
+        away: match.away,
+        qualified: options.qualified
+      })
+    : "";
   const predictionId = `${user.uid}_${options.match}`;
   const predictionReference = db.collection("predictions").doc(predictionId);
   const previousSnapshot = await predictionReference.get();
 
-  await predictionReference.set({
+  const prediction = {
     uid: user.uid,
     matchId: options.match,
-    groupId: match.groupId,
-    matchIndex: Number(match.matchIndex),
     home: match.home,
     away: match.away,
     homeScore,
@@ -130,13 +144,25 @@ async function setPrediction(db, options) {
     adminAdjusted: true,
     adminAdjustedAt: FieldValue.serverTimestamp(),
     adminAdjustmentReason: options.reason.trim()
-  });
+  };
+
+  if (isKnockout) {
+    prediction.phase = "knockout";
+    prediction.stage = match.stage || "";
+    prediction.qualifiedTeamId = qualifiedTeamId;
+  } else {
+    prediction.groupId = match.groupId;
+    prediction.matchIndex = Number(match.matchIndex);
+  }
+
+  await predictionReference.set(prediction);
 
   const ranking = await updateRanking(db);
   const userRanking = ranking.find((entry) => entry.uid === user.uid);
   console.log(
     `Palpite ${previousSnapshot.exists ? "atualizado" : "criado"}: `
-    + `${user.displayName || user.email || user.uid}, ${match.home} ${homeScore} x ${awayScore} ${match.away}.`
+    + `${user.displayName || user.email || user.uid}, ${match.home} ${homeScore} x ${awayScore} ${match.away}`
+    + `${isKnockout ? `, classifica ${qualifiedTeamId}` : ""}.`
   );
   console.log(
     `Ranking recalculado: ${userRanking?.points || 0} pontos, posição ${userRanking?.position || "-"}.`

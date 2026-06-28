@@ -35,6 +35,36 @@ export function parseScore(value) {
   return { homeScore, awayScore };
 }
 
+export function normalizeQualifiedTeam(value) {
+  return String(value ?? "").trim();
+}
+
+export function inferQualifiedTeam({ homeScore, awayScore, home, away, qualified }) {
+  const selected = normalizeQualifiedTeam(qualified);
+
+  if (homeScore > awayScore) {
+    if (selected && selected !== home) {
+      throw new Error(`Com placar ${homeScore}x${awayScore}, o classificado deve ser ${home}.`);
+    }
+    return home;
+  }
+
+  if (awayScore > homeScore) {
+    if (selected && selected !== away) {
+      throw new Error(`Com placar ${homeScore}x${awayScore}, o classificado deve ser ${away}.`);
+    }
+    return away;
+  }
+
+  if (!selected) {
+    throw new Error("Em empate no mata-mata, informe --qualified com quem passou.");
+  }
+  if (![home, away].includes(selected)) {
+    throw new Error(`--qualified deve ser \"${home}\" ou \"${away}\".`);
+  }
+  return selected;
+}
+
 export function requireSetOptions(options) {
   if (!options.email && !options.uid) {
     throw new Error("Informe --email ou --uid.");
