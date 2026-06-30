@@ -1479,8 +1479,8 @@
 
     .ranking-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 22px;
       align-items: start;
     }
 
@@ -1894,7 +1894,7 @@
 
     .ranking-detail {
       display: grid;
-      grid-template-columns: minmax(180px, 1fr) 130px auto;
+      grid-template-columns: minmax(220px, 1fr) minmax(120px, auto) max-content;
       gap: 14px;
       align-items: center;
       padding: 10px 12px;
@@ -1910,7 +1910,18 @@
       background: linear-gradient(90deg, #fff8d8, rgba(255, 255, 255, 0.92));
     }
 
+    .ranking-detail.result-knockout-exact-qualified {
+      border-left-color: var(--gold-500);
+      background: linear-gradient(90deg, #fff8d8, rgba(255, 255, 255, 0.92));
+    }
+
     .ranking-detail.result-outcome {
+      border-left-color: var(--green-700);
+      background: linear-gradient(90deg, var(--mint-100), rgba(255, 255, 255, 0.92));
+    }
+
+    .ranking-detail.result-knockout-qualified,
+    .ranking-detail.result-knockout-draw-only {
       border-left-color: var(--green-700);
       background: linear-gradient(90deg, var(--mint-100), rgba(255, 255, 255, 0.92));
     }
@@ -1919,6 +1930,7 @@
     .ranking-detail-result {
       display: grid;
       gap: 2px;
+      min-width: 0;
     }
 
     .ranking-detail-match span,
@@ -1940,6 +1952,7 @@
       font-size: 0.7rem;
       font-weight: 800;
       white-space: nowrap;
+      text-align: center;
     }
 
     .result-exact .ranking-detail-status {
@@ -1947,7 +1960,18 @@
       background: rgba(245, 197, 66, 0.5);
     }
 
+    .result-knockout-exact-qualified .ranking-detail-status {
+      color: var(--blue-900);
+      background: rgba(245, 197, 66, 0.5);
+    }
+
     .result-outcome .ranking-detail-status {
+      color: var(--green-900);
+      background: var(--mint-200);
+    }
+
+    .result-knockout-qualified .ranking-detail-status,
+    .result-knockout-draw-only .ranking-detail-status {
       color: var(--green-900);
       background: var(--mint-200);
     }

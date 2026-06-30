@@ -28,3 +28,19 @@ test("comparacao do ranking fica recolhivel e compacta no mobile", () => {
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*\.ranking-compare-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*\.ranking-compare-list\s*\{[\s\S]*max-height: 260px;/);
 });
+
+test("ranking desktop evita duas tabelas espremidas lado a lado", () => {
+  const css = readFileSync("css/app.css", "utf8");
+
+  assert.match(css, /\.ranking-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.doesNotMatch(css, /\.ranking-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+});
+
+test("detalhes do ranking do mata-mata nao usam vermelho para acertos", () => {
+  const css = readFileSync("css/app.css", "utf8");
+
+  assert.match(css, /\.ranking-detail\.result-knockout-exact-qualified\s*\{[\s\S]*border-left-color: var\(--gold-500\);/);
+  assert.match(css, /\.ranking-detail\.result-knockout-qualified,\s*[\r\n\s]*\.ranking-detail\.result-knockout-draw-only\s*\{[\s\S]*border-left-color: var\(--green-700\);/);
+  assert.match(css, /\.result-knockout-exact-qualified \.ranking-detail-status\s*\{[\s\S]*background: rgba\(245, 197, 66, 0\.5\);/);
+  assert.match(css, /\.result-knockout-qualified \.ranking-detail-status,\s*[\r\n\s]*\.result-knockout-draw-only \.ranking-detail-status\s*\{[\s\S]*background: var\(--mint-200\);/);
+});
