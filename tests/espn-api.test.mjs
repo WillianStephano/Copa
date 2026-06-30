@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  ESPN_GROUP_STAGE_DATES,
+  ESPN_TOURNAMENT_DATES,
   fetchEspnEvents,
   getEspnMatchStatus,
   mapEspnEvent
@@ -36,7 +36,29 @@ test("interpreta status ao vivo e agendado da ESPN", () => {
   assert.equal(getEspnMatchStatus({ status: { type: { state: "pre" } } }), "SCHEDULED");
 });
 
-test("consulta ESPN com intervalo completo da fase de grupos", async () => {
+test("mapeia evento da ESPN para jogo de mata-mata", () => {
+  const match = mapEspnEvent({
+    id: "760486",
+    date: "2026-06-28T19:00Z",
+    season: { slug: "round-of-32" },
+    status: { type: { state: "post", completed: true } },
+    competitions: [{
+      competitors: [
+        { homeAway: "home", score: "0", winner: false, team: { displayName: "South Africa" } },
+        { homeAway: "away", score: "1", winner: true, advance: true, team: { displayName: "Canada" } }
+      ]
+    }]
+  });
+
+  assert.equal(match.id, "KO-R32-1");
+  assert.equal(match.phase, "knockout");
+  assert.equal(match.status, "FINISHED");
+  assert.equal(match.qualifiedTeamId, "Canadá");
+  assert.equal(match.homeScore, 0);
+  assert.equal(match.awayScore, 1);
+});
+
+test("consulta ESPN com intervalo completo do torneio", async () => {
   let requestedUrl = "";
   const fetchMock = async (url) => {
     requestedUrl = String(url);
@@ -54,7 +76,7 @@ test("consulta ESPN com intervalo completo da fase de grupos", async () => {
   });
 
   assert.match(requestedUrl, /site\.api\.espn\.com/);
-  assert.match(requestedUrl, new RegExp(`dates=${ESPN_GROUP_STAGE_DATES}`));
+  assert.match(requestedUrl, new RegExp(`dates=${ESPN_TOURNAMENT_DATES}`));
   assert.match(requestedUrl, /limit=200/);
   assert.deepEqual(events, [{ id: "760456" }]);
 });

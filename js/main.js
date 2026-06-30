@@ -27,6 +27,7 @@ import {
   confirmKnockoutPrediction,
   confirmPrediction,
   subscribeToMatchPredictionSummaries,
+  subscribeToKnockoutRanking,
   subscribeToOfficialMatches,
   subscribeToPredictions,
   subscribeToRanking,
@@ -46,12 +47,14 @@ const state = {
   matchPredictionSummaries: {},
   officialMatches: {},
   syncStatus: null,
-  ranking: []
+  ranking: [],
+  knockoutRanking: []
 };
 
 let unsubscribePredictions = null;
 let unsubscribeMatches = null;
 let unsubscribeRanking = null;
+let unsubscribeKnockoutRanking = null;
 let unsubscribeMatchPredictionSummaries = null;
 let unsubscribeSyncStatus = null;
 
@@ -72,6 +75,9 @@ const els = {
   rankingList: document.getElementById("rankingList"),
   rankingEmpty: document.getElementById("rankingEmpty"),
   rankingMeta: document.getElementById("rankingMeta"),
+  knockoutRankingList: document.getElementById("knockoutRankingList"),
+  knockoutRankingEmpty: document.getElementById("knockoutRankingEmpty"),
+  knockoutRankingMeta: document.getElementById("knockoutRankingMeta"),
   calendarList: document.getElementById("calendarList"),
   leadersGrid: document.getElementById("leadersGrid"),
   dailyLeaders: document.getElementById("dailyLeaders"),
@@ -179,6 +185,11 @@ function renderAll() {
   els.rankingList.innerHTML = rankingView.html;
   els.rankingEmpty.classList.toggle("active", rankingView.empty);
   els.rankingMeta.textContent = rankingView.meta;
+
+  const knockoutRankingView = renderRanking(state.knockoutRanking, state.user?.uid);
+  els.knockoutRankingList.innerHTML = knockoutRankingView.html;
+  els.knockoutRankingEmpty.classList.toggle("active", knockoutRankingView.empty);
+  els.knockoutRankingMeta.textContent = knockoutRankingView.meta;
 }
 
 function resetScoresAction() {
@@ -478,6 +489,7 @@ subscribeToAuth((user) => {
   unsubscribePredictions?.();
   unsubscribeMatches?.();
   unsubscribeRanking?.();
+  unsubscribeKnockoutRanking?.();
   unsubscribeMatchPredictionSummaries?.();
   unsubscribeSyncStatus?.();
 
@@ -487,6 +499,7 @@ subscribeToAuth((user) => {
   state.officialMatches = {};
   state.syncStatus = null;
   state.ranking = [];
+  state.knockoutRanking = [];
 
   if (!user) {
     renderAll();
@@ -522,6 +535,11 @@ subscribeToAuth((user) => {
 
   unsubscribeRanking = subscribeToRanking((ranking) => {
     state.ranking = ranking;
+    renderAll();
+  }, handleSyncError);
+
+  unsubscribeKnockoutRanking = subscribeToKnockoutRanking((ranking) => {
+    state.knockoutRanking = ranking;
     renderAll();
   }, handleSyncError);
 

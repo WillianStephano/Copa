@@ -18,9 +18,18 @@ function isScoredMatch(match) {
     && Number.isInteger(match.awayScore);
 }
 
-function finishedMatchesInOrder(matches) {
+function shouldIncludeMatch(matchId, match, options = {}) {
+  if (!match) return false;
+  if (typeof options.filterMatch === "function") {
+    return options.filterMatch(matchId, match);
+  }
+  if (!options.phase) return true;
+  return (match.phase || "group") === options.phase;
+}
+
+function finishedMatchesInOrder(matches, options = {}) {
   return Array.from(matches.entries())
-    .filter(([, match]) => isScoredMatch(match))
+    .filter(([matchId, match]) => isScoredMatch(match) && shouldIncludeMatch(matchId, match, options))
     .map(([matchId, match]) => ({
       matchId,
       match,
@@ -74,11 +83,12 @@ export function calculateHitStreak(uid, predictionsByUserMatch, finishedMatches)
   return { currentStreak, bestStreak };
 }
 
-export function buildRankingDetails(predictions, matches) {
+export function buildRankingDetails(predictions, matches, options = {}) {
   const details = new Map();
 
   predictions.forEach((prediction) => {
     const match = matches.get(prediction.matchId);
+    if (!shouldIncludeMatch(prediction.matchId, match, options)) return;
     if (!match || match.status !== "FINISHED") return;
     if (!Number.isInteger(match.homeScore) || !Number.isInteger(match.awayScore)) return;
 
@@ -117,10 +127,10 @@ export function buildRankingDetails(predictions, matches) {
   return details;
 }
 
-export function buildRanking(users, predictions, matches) {
+export function buildRanking(users, predictions, matches, options = {}) {
   const entries = new Map();
   const predictionsByUserMatch = buildPredictionIndex(predictions);
-  const finishedMatches = finishedMatchesInOrder(matches);
+  const finishedMatches = finishedMatchesInOrder(matches, options);
 
   users.forEach((user) => {
     if (!user.uid) return;
@@ -140,6 +150,7 @@ export function buildRanking(users, predictions, matches) {
 
   predictions.forEach((prediction) => {
     const match = matches.get(prediction.matchId);
+    if (!shouldIncludeMatch(prediction.matchId, match, options)) return;
     if (!match || match.status !== "FINISHED") return;
     if (!Number.isInteger(match.homeScore) || !Number.isInteger(match.awayScore)) return;
 

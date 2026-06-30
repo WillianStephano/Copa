@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node test.mjs",
     "sync:results": "node scripts/sync-results.mjs",
+    "admin:sync-results": "node scripts/admin-sync-results.mjs",
     "admin:prediction": "node scripts/admin-prediction.mjs",
     "ai:predictions": "node scripts/gemini-predictions.mjs",
     "ai:debug": "node scripts/debug-gemini-response.mjs"

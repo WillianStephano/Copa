@@ -1,24 +1,25 @@
 import { groups } from "../js/data.js";
+import { findKnockoutMatchBySourceMatchNumber } from "../js/knockout.js";
 
 export const WORLDCUP_API_URL = "https://worldcup26.ir/get/games";
 
 const STADIUM_UTC_OFFSETS = {
-  1: -6,  // Mexico City
-  2: -6,  // Guadalajara
-  3: -6,  // Monterrey
-  4: -5,  // Dallas
-  5: -5,  // Houston
-  6: -5,  // Kansas City
-  7: -4,  // Atlanta
-  8: -4,  // Miami
-  9: -4,  // Boston
-  10: -4, // Philadelphia
-  11: -4, // New York/New Jersey
-  12: -4, // Toronto
-  13: -7, // Vancouver
-  14: -7, // Seattle
-  15: -7, // San Francisco Bay Area
-  16: -7  // Los Angeles
+  1: -6,
+  2: -6,
+  3: -6,
+  4: -5,
+  5: -5,
+  6: -5,
+  7: -4,
+  8: -4,
+  9: -4,
+  10: -4,
+  11: -4,
+  12: -4,
+  13: -7,
+  14: -7,
+  15: -7,
+  16: -7
 };
 
 const TEAM_ALIASES = {
@@ -141,32 +142,119 @@ function parseScore(value, status) {
   return Number.isInteger(score) && score >= 0 ? score : null;
 }
 
-export function mapApiMatch(apiMatch) {
-  if (apiMatch.type !== "group") return null;
+function winnerReferenceMatchNumber(label) {
+  const match = String(label ?? "").match(/winner\s+match\s+(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
 
-  const home = canonicalTeam(apiMatch.home_team_name_en);
-  const away = canonicalTeam(apiMatch.away_team_name_en);
-  if (!home || !away) return null;
+function buildQualifiedTeamsBySourceMatchNumber(apiMatches) {
+  const qualifiedByMatchNumber = new Map();
 
-  const local = localMatches.get(matchPairKey(home, away));
-  const kickoff = parseStadiumLocalDate(apiMatch.local_date, apiMatch.stadium_id);
+  apiMatches.forEach((apiMatch) => {
+    const homeTeam = canonicalTeam(apiMatch.home_team_name_en);
+    const awayTeam = canonicalTeam(apiMatch.away_team_name_en);
+    const homeWinnerRef = winnerReferenceMatchNumber(apiMatch.home_team_label);
+    const awayWinnerRef = winnerReferenceMatchNumber(apiMatch.away_team_label);
+
+    if (homeWinnerRef && homeTeam) qualifiedByMatchNumber.set(homeWinnerRef, homeTeam);
+    if (awayWinnerRef && awayTeam) qualifiedByMatchNumber.set(awayWinnerRef, awayTeam);
+  });
+
+  return qualifiedByMatchNumber;
+}
+
+function inferKnockoutQualifiedTeam(apiMatch, home, away, qualifiedByMatchNumber) {
+  const sourceMatchNumber = Number(apiMatch.id);
+  if (qualifiedByMatchNumber.has(sourceMatchNumber)) {
+    return qualifiedByMatchNumber.get(sourceMatchNumber);
+  }
+
+  const status = getApiMatchStatus(apiMatch);
+  if (status !== "FINISHED") return "";
+
+  const homeScore = parseScore(apiMatch.home_score, status);
+  const awayScore = parseScore(apiMatch.away_score, status);
+  if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore === awayScore) {
+    return "";
+  }
+
+  return homeScore > awayScore ? home : away;
+}
+
+function mapKnockoutApiMatch(apiMatch, kickoff, qualifiedByMatchNumber) {
+  const sourceMatchNumber = Number(apiMatch.id);
+  const local = findKnockoutMatchBySourceMatchNumber(sourceMatchNumber);
   if (!local || !kickoff) return null;
 
   const status = getApiMatchStatus(apiMatch);
+  const homeTeam = canonicalTeam(apiMatch.home_team_name_en);
+  const awayTeam = canonicalTeam(apiMatch.away_team_name_en);
+  const home = homeTeam || apiMatch.home_team_label || local.home || local.homePlaceholder || "A definir";
+  const away = awayTeam || apiMatch.away_team_label || local.away || local.awayPlaceholder || "A definir";
+
   return {
     id: local.id,
-    groupId: local.groupId,
-    matchIndex: local.index,
-    home: local.home,
-    away: local.away,
+    phase: "knockout",
+    stage: local.stage,
+    stageTitle: local.stageTitle,
+    matchNumber: local.matchNumber,
+    sourceMatchNumber,
+    home,
+    away,
+    homePlaceholder: homeTeam ? "" : (apiMatch.home_team_label || local.homePlaceholder || ""),
+    awayPlaceholder: awayTeam ? "" : (apiMatch.away_team_label || local.awayPlaceholder || ""),
     kickoff,
     lockAt: new Date(kickoff.getTime() - 30 * 60_000),
     status,
     homeScore: parseScore(apiMatch.home_score, status),
     awayScore: parseScore(apiMatch.away_score, status),
+    qualifiedTeamId: inferKnockoutQualifiedTeam(apiMatch, home, away, qualifiedByMatchNumber),
     source: "worldcup26.ir",
     sourceMatchId: String(apiMatch.id)
   };
+}
+
+export function mapApiMatch(apiMatch, context = {}) {
+  const kickoff = parseStadiumLocalDate(apiMatch.local_date, apiMatch.stadium_id);
+  if (!kickoff) return null;
+
+  if (apiMatch.type === "group") {
+    const home = canonicalTeam(apiMatch.home_team_name_en);
+    const away = canonicalTeam(apiMatch.away_team_name_en);
+    if (!home || !away) return null;
+
+    const local = localMatches.get(matchPairKey(home, away));
+    if (!local) return null;
+
+    const status = getApiMatchStatus(apiMatch);
+    return {
+      id: local.id,
+      groupId: local.groupId,
+      matchIndex: local.index,
+      home: local.home,
+      away: local.away,
+      kickoff,
+      lockAt: new Date(kickoff.getTime() - 30 * 60_000),
+      status,
+      homeScore: parseScore(apiMatch.home_score, status),
+      awayScore: parseScore(apiMatch.away_score, status),
+      source: "worldcup26.ir",
+      sourceMatchId: String(apiMatch.id)
+    };
+  }
+
+  return mapKnockoutApiMatch(
+    apiMatch,
+    kickoff,
+    context.qualifiedByMatchNumber || new Map()
+  );
+}
+
+export function mapApiMatches(apiMatches) {
+  const qualifiedByMatchNumber = buildQualifiedTeamsBySourceMatchNumber(apiMatches);
+  return apiMatches
+    .map((apiMatch) => mapApiMatch(apiMatch, { qualifiedByMatchNumber }))
+    .filter(Boolean);
 }
 
 function wait(milliseconds) {

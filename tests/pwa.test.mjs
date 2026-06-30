@@ -22,15 +22,18 @@ test("index declara manifest, icone e menu mobile", () => {
   assert.match(html, /id="mainTabs"/);
   assert.match(html, /data-tab="knockout"/);
   assert.match(html, /id="knockoutGrid"/);
+  assert.match(html, /id="knockoutRankingList"/);
+  assert.match(html, /Ranking do mata-mata/);
 });
 
 test("service worker guarda o shell principal em cache", () => {
   const serviceWorker = readFileSync("sw.js", "utf8");
 
-  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v8"/);
+  assert.match(serviceWorker, /CACHE_NAME = "copa2026-bolao-v9"/);
   assert.match(serviceWorker, /\.\/index\.html/);
   assert.match(serviceWorker, /\.\/css\/app\.css/);
   assert.match(serviceWorker, /\.\/js\/main\.js/);
+  assert.match(serviceWorker, /\.\/js\/knockout\.js/);
 });
 
 test("main registra service worker e controla instalacao", () => {
@@ -39,4 +42,5 @@ test("main registra service worker e controla instalacao", () => {
   assert.match(main, /beforeinstallprompt/);
   assert.match(main, /navigator\.serviceWorker\.register\("\.\/sw\.js"\)/);
   assert.match(main, /mobile-open/);
+  assert.match(main, /subscribeToKnockoutRanking/);
 });

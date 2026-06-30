@@ -45,6 +45,17 @@ test("16 avos do mata-mata ficam completos com datas para palpite", () => {
   assert.equal(roundOf32Matches.at(-1).away, "Gana");
 });
 
+test("ids locais do mata-mata preservam os jogos ja palpitados e corrigem a numeracao oficial", () => {
+  const sourceNumberById = Object.fromEntries(
+    roundOf32Matches.map((match) => [match.id, match.sourceMatchNumber])
+  );
+
+  assert.equal(sourceNumberById["KO-R32-1"], 73);
+  assert.equal(sourceNumberById["KO-R32-2"], 76);
+  assert.equal(sourceNumberById["KO-R32-3"], 74);
+  assert.equal(sourceNumberById["KO-R32-4"], 75);
+});
+
 test("mata-mata mescla jogo oficial sem perder fase e placeholders", () => {
   const matches = mergeKnockoutMatches({
     "KO-R32-1": {

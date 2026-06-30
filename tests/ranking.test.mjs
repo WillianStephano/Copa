@@ -203,3 +203,50 @@ test("ranking soma grupos e mata-mata com regras segregadas", () => {
   assert.equal(details[2].points, 1);
 });
 
+test("ranking do mata-mata considera apenas confrontos eliminatorios", () => {
+  const users = [
+    { uid: "ana", displayName: "Ana" },
+    { uid: "bia", displayName: "Bia" }
+  ];
+  const predictions = [
+    { uid: "ana", matchId: "A-0", homeScore: 1, awayScore: 0 },
+    { uid: "ana", matchId: "KO-R32-1", homeScore: 1, awayScore: 1, qualifiedTeamId: "Brasil" },
+    { uid: "bia", matchId: "A-0", homeScore: 2, awayScore: 1 },
+    { uid: "bia", matchId: "KO-R32-1", homeScore: 2, awayScore: 0, qualifiedTeamId: "Brasil" }
+  ];
+  const matches = new Map([
+    ["A-0", {
+      phase: "group",
+      status: "FINISHED",
+      home: "México",
+      away: "África do Sul",
+      homeScore: 2,
+      awayScore: 1,
+      kickoffAt: new Date("2026-06-20T18:00:00.000Z")
+    }],
+    ["KO-R32-1", {
+      phase: "knockout",
+      status: "FINISHED",
+      home: "Brasil",
+      away: "Japão",
+      homeScore: 1,
+      awayScore: 1,
+      qualifiedTeamId: "Brasil",
+      kickoffAt: new Date("2026-06-29T18:00:00.000Z")
+    }]
+  ]);
+
+  const ranking = buildRanking(users, predictions, matches, { phase: "knockout" });
+  const details = buildRankingDetails(predictions, matches, { phase: "knockout" });
+
+  assert.deepEqual(ranking.map((entry) => entry.uid), ["ana", "bia"]);
+  assert.equal(ranking[0].points, 3);
+  assert.equal(ranking[0].exactHits, 1);
+  assert.equal(ranking[0].outcomeHits, 0);
+  assert.equal(ranking[1].points, 2);
+  assert.equal(ranking[1].outcomeHits, 1);
+  assert.equal(ranking[1].misses, 0);
+  assert.deepEqual(details.get("ana").map((detail) => detail.matchId), ["KO-R32-1"]);
+  assert.equal(details.get("bia")[0].type, "knockout-qualified");
+});
+

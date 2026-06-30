@@ -161,22 +161,53 @@
         data-panel="ranking">
         <div class="section-head">
           <div>
-            <h2>Ranking geral</h2>
-            <p>Grupos: placar exato 3; vencedor/empate 2. Mata-mata: regra própria por classificado.</p>
+            <h2>Rankings</h2>
+            <p>O rank geral continua valendo para o bolão inteiro, e agora o mata-mata também tem sua visão própria.</p>
           </div>
-          <p class="meta-line" id="rankingMeta"></p>
         </div>
-        <div class="ranking-card">
-          <div class="ranking-header" aria-hidden="true">
-            <span>Posição</span>
-            <span>Participante</span>
-            <span>Pontos</span>
-            <span>Exatos</span>
-            <span>Resultados</span>
-          </div>
-          <div id="rankingList" class="ranking-list"></div>
+        <div class="ranking-grid">
+          <section class="ranking-section">
+            <div class="section-head ranking-section-head">
+              <div>
+                <h3>Ranking geral</h3>
+                <p>Grupos: placar exato 3; vencedor ou empate 2. Mata-mata soma junto no total geral.</p>
+              </div>
+              <p class="meta-line" id="rankingMeta"></p>
+            </div>
+            <div class="ranking-card">
+              <div class="ranking-header" aria-hidden="true">
+                <span>Posição</span>
+                <span>Participante</span>
+                <span>Pontos</span>
+                <span>Exatos</span>
+                <span>Resultados</span>
+              </div>
+              <div id="rankingList" class="ranking-list"></div>
+            </div>
+            <div class="empty-state" id="rankingEmpty">O ranking geral aparecerá após a primeira sincronização.</div>
+          </section>
+
+          <section class="ranking-section">
+            <div class="section-head ranking-section-head">
+              <div>
+                <h3>Ranking do mata-mata</h3>
+                <p>Visão separada só com confrontos eliminatórios e pontuação exclusiva dessa fase.</p>
+              </div>
+              <p class="meta-line" id="knockoutRankingMeta"></p>
+            </div>
+            <div class="ranking-card">
+              <div class="ranking-header" aria-hidden="true">
+                <span>Posição</span>
+                <span>Participante</span>
+                <span>Pontos</span>
+                <span>Exatos</span>
+                <span>Resultados</span>
+              </div>
+              <div id="knockoutRankingList" class="ranking-list"></div>
+            </div>
+            <div class="empty-state" id="knockoutRankingEmpty">O ranking do mata-mata aparecerá após a primeira sincronização.</div>
+          </section>
         </div>
-        <div class="empty-state" id="rankingEmpty">O ranking aparecerá após a primeira sincronização.</div>
       </section>
 
       <section class="tab-panel" id="panel-standings" role="tabpanel" aria-labelledby="tab-standings"

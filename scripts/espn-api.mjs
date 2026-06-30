@@ -1,10 +1,14 @@
+import { roundOf32Matches } from "../js/knockout.js";
 import { canonicalTeam, findLocalMatch, matchPairKey } from "./worldcup-api.mjs";
 
 export const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
-export const ESPN_GROUP_STAGE_DATES = "20260611-20260628";
+export const ESPN_TOURNAMENT_DATES = "20260611-20260719";
 
 const FINISHED_STATES = new Set(["post"]);
 const LIVE_STATES = new Set(["in"]);
+const roundOf32ByPair = new Map(
+  roundOf32Matches.map((match) => [matchPairKey(match.home, match.away), match])
+);
 
 function parseIntegerScore(value, status) {
   if (status === "SCHEDULED") return null;
@@ -18,6 +22,34 @@ function getCompetition(event) {
 
 function getCompetitor(competition, homeAway) {
   return competition?.competitors?.find((competitor) => competitor.homeAway === homeAway) || null;
+}
+
+function getEspnKnockoutSlug(event) {
+  const slug = event?.season?.slug || getCompetition(event)?.status?.type?.slug || "";
+  return String(slug).toLowerCase();
+}
+
+function findLocalEspnMatch(home, away, slug) {
+  if (slug === "round-of-32") {
+    return roundOf32ByPair.get(matchPairKey(home, away)) || null;
+  }
+
+  return findLocalMatch(home, away);
+}
+
+function getQualifiedTeamId(homeCompetitor, awayCompetitor, home, away, status) {
+  const homeAdvanced = Boolean(homeCompetitor?.advance || homeCompetitor?.winner);
+  const awayAdvanced = Boolean(awayCompetitor?.advance || awayCompetitor?.winner);
+  if (homeAdvanced && !awayAdvanced) return home;
+  if (awayAdvanced && !homeAdvanced) return away;
+
+  const homeScore = parseIntegerScore(homeCompetitor?.score, status);
+  const awayScore = parseIntegerScore(awayCompetitor?.score, status);
+  if (!Number.isInteger(homeScore) || !Number.isInteger(awayScore) || homeScore === awayScore) {
+    return "";
+  }
+
+  return homeScore > awayScore ? home : away;
 }
 
 export function getEspnMatchStatus(event) {
@@ -39,17 +71,16 @@ export function mapEspnEvent(event) {
   const away = canonicalTeam(awayCompetitor?.team?.displayName || awayCompetitor?.team?.name);
   if (!home || !away) return null;
 
-  const local = findLocalMatch(home, away);
+  const slug = getEspnKnockoutSlug(event);
+  const local = findLocalEspnMatch(home, away, slug);
   const kickoff = new Date(event?.date || competition?.date);
   if (!local || Number.isNaN(kickoff.getTime())) return null;
 
   const status = getEspnMatchStatus(event);
-  return {
+  const baseMatch = {
     id: local.id,
-    groupId: local.groupId,
-    matchIndex: local.index,
-    home: local.home,
-    away: local.away,
+    home,
+    away,
     kickoff,
     lockAt: new Date(kickoff.getTime() - 30 * 60_000),
     status,
@@ -59,6 +90,24 @@ export function mapEspnEvent(event) {
     sourceMatchId: String(event.id),
     sourcePairKey: matchPairKey(home, away)
   };
+
+  if (local.phase === "knockout") {
+    return {
+      ...baseMatch,
+      phase: "knockout",
+      stage: local.stage,
+      stageTitle: local.stageTitle,
+      matchNumber: local.matchNumber,
+      sourceMatchNumber: local.sourceMatchNumber,
+      qualifiedTeamId: getQualifiedTeamId(homeCompetitor, awayCompetitor, home, away, status)
+    };
+  }
+
+  return {
+    ...baseMatch,
+    groupId: local.groupId,
+    matchIndex: local.index
+  };
 }
 
 function wait(milliseconds) {
@@ -66,7 +115,7 @@ function wait(milliseconds) {
 }
 
 export async function fetchEspnEvents({
-  dates = ESPN_GROUP_STAGE_DATES,
+  dates = ESPN_TOURNAMENT_DATES,
   fetchImplementation = fetch,
   attempts = 4,
   baseDelayMs = 2_000

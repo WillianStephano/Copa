@@ -17,21 +17,21 @@ function knockoutLockAt(kickoffDate) {
 
 export const roundOf32Matches = [
   ["KO-R32-1", 73, "África do Sul", "Canadá", "2026-06-28T19:00:00.000Z"],
-  ["KO-R32-2", 74, "Brasil", "Japão", "2026-06-29T17:00:00.000Z"],
-  ["KO-R32-3", 75, "Alemanha", "Paraguai", "2026-06-29T20:30:00.000Z"],
-  ["KO-R32-4", 76, "Holanda", "Marrocos", "2026-06-30T01:00:00.000Z"],
-  ["KO-R32-5", 77, "Costa do Marfim", "Noruega", "2026-06-30T17:00:00.000Z"],
-  ["KO-R32-6", 78, "França", "Suécia", "2026-06-30T21:00:00.000Z"],
+  ["KO-R32-2", 76, "Brasil", "Japão", "2026-06-29T17:00:00.000Z"],
+  ["KO-R32-3", 74, "Alemanha", "Paraguai", "2026-06-29T20:30:00.000Z"],
+  ["KO-R32-4", 75, "Holanda", "Marrocos", "2026-06-30T01:00:00.000Z"],
+  ["KO-R32-5", 78, "Costa do Marfim", "Noruega", "2026-06-30T17:00:00.000Z"],
+  ["KO-R32-6", 77, "França", "Suécia", "2026-06-30T21:00:00.000Z"],
   ["KO-R32-7", 79, "México", "Equador", "2026-07-01T01:00:00.000Z"],
   ["KO-R32-8", 80, "Inglaterra", "RD Congo", "2026-07-01T16:00:00.000Z"],
-  ["KO-R32-9", 81, "Bélgica", "Senegal", "2026-07-01T20:00:00.000Z"],
-  ["KO-R32-10", 82, "Estados Unidos", "Bósnia", "2026-07-02T00:00:00.000Z"],
-  ["KO-R32-11", 83, "Espanha", "Áustria", "2026-07-02T19:00:00.000Z"],
-  ["KO-R32-12", 84, "Portugal", "Croácia", "2026-07-02T23:00:00.000Z"],
+  ["KO-R32-9", 82, "Bélgica", "Senegal", "2026-07-01T20:00:00.000Z"],
+  ["KO-R32-10", 81, "Estados Unidos", "Bósnia", "2026-07-02T00:00:00.000Z"],
+  ["KO-R32-11", 84, "Espanha", "Áustria", "2026-07-02T19:00:00.000Z"],
+  ["KO-R32-12", 83, "Portugal", "Croácia", "2026-07-02T23:00:00.000Z"],
   ["KO-R32-13", 85, "Suíça", "Argélia", "2026-07-03T03:00:00.000Z"],
-  ["KO-R32-14", 86, "Austrália", "Egito", "2026-07-03T18:00:00.000Z"],
-  ["KO-R32-15", 87, "Argentina", "Cabo Verde", "2026-07-03T22:00:00.000Z"],
-  ["KO-R32-16", 88, "Colômbia", "Gana", "2026-07-04T01:30:00.000Z"]
+  ["KO-R32-14", 88, "Austrália", "Egito", "2026-07-03T18:00:00.000Z"],
+  ["KO-R32-15", 86, "Argentina", "Cabo Verde", "2026-07-03T22:00:00.000Z"],
+  ["KO-R32-16", 87, "Colômbia", "Gana", "2026-07-04T01:30:00.000Z"]
 ].map(([id, sourceMatchNumber, home, away, kickoffText], index) => {
   const kickoffDate = kickoffUtc(kickoffText);
   return {
@@ -51,6 +51,45 @@ export const roundOf32Matches = [
     source: "static-knockout-bracket"
   };
 });
+
+const futureKnockoutReferenceMatches = [
+  ["KO-R16-1", 89, "round-of-16", "Oitavas de final", 1],
+  ["KO-R16-2", 90, "round-of-16", "Oitavas de final", 2],
+  ["KO-R16-3", 91, "round-of-16", "Oitavas de final", 3],
+  ["KO-R16-4", 92, "round-of-16", "Oitavas de final", 4],
+  ["KO-R16-5", 93, "round-of-16", "Oitavas de final", 5],
+  ["KO-R16-6", 94, "round-of-16", "Oitavas de final", 6],
+  ["KO-R16-7", 95, "round-of-16", "Oitavas de final", 7],
+  ["KO-R16-8", 96, "round-of-16", "Oitavas de final", 8],
+  ["KO-QF-1", 97, "quarter-final", "Quartas de final", 1],
+  ["KO-QF-2", 98, "quarter-final", "Quartas de final", 2],
+  ["KO-QF-3", 99, "quarter-final", "Quartas de final", 3],
+  ["KO-QF-4", 100, "quarter-final", "Quartas de final", 4],
+  ["KO-SF-1", 101, "semi-final", "Semifinais", 1],
+  ["KO-SF-2", 102, "semi-final", "Semifinais", 2],
+  ["KO-TP-1", 103, "third-place", "Disputa de 3o lugar", 1],
+  ["KO-FINAL-1", 104, "final", "Final", 1]
+].map(([id, sourceMatchNumber, stage, stageTitle, matchNumber]) => ({
+  id,
+  sourceMatchNumber,
+  phase: "knockout",
+  stage,
+  stageTitle,
+  matchNumber,
+  homePlaceholder: "A definir",
+  awayPlaceholder: "A definir",
+  status: "PENDING",
+  source: "static-knockout-skeleton"
+}));
+
+const knockoutReferenceBySourceMatchNumber = new Map(
+  [...roundOf32Matches, ...futureKnockoutReferenceMatches]
+    .map((match) => [Number(match.sourceMatchNumber), match])
+);
+
+export function findKnockoutMatchBySourceMatchNumber(sourceMatchNumber) {
+  return knockoutReferenceBySourceMatchNumber.get(Number(sourceMatchNumber)) || null;
+}
 
 export function buildKnockoutSkeleton() {
   return knockoutStages.flatMap((stage) =>

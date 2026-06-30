@@ -5,6 +5,7 @@ import {
   fetchOfficialMatches,
   getApiMatchStatus,
   mapApiMatch,
+  mapApiMatches,
   parseStadiumLocalDate
 } from "../scripts/worldcup-api.mjs";
 
@@ -70,6 +71,67 @@ test("jogo futuro não usa placar provisório da API", () => {
 
   assert.equal(match.homeScore, null);
   assert.equal(match.awayScore, null);
+});
+
+test("mapeia jogo do mata-mata via numeracao oficial", () => {
+  const match = mapApiMatch({
+    id: "76",
+    type: "r32",
+    home_team_name_en: "Brazil",
+    away_team_name_en: "Japan",
+    home_team_label: "Winner Group C",
+    away_team_label: "Runner-up Group B",
+    local_date: "06/29/2026 12:00",
+    stadium_id: "4",
+    finished: "TRUE",
+    time_elapsed: "finished",
+    home_score: "2",
+    away_score: "1"
+  }, {
+    qualifiedByMatchNumber: new Map()
+  });
+
+  assert.equal(match.id, "KO-R32-2");
+  assert.equal(match.phase, "knockout");
+  assert.equal(match.stage, "round-of-32");
+  assert.equal(match.qualifiedTeamId, "Brasil");
+  assert.equal(match.homeScore, 2);
+  assert.equal(match.awayScore, 1);
+});
+
+test("mata-mata infere classificado pelo proximo confronto oficial", () => {
+  const matches = mapApiMatches([
+    {
+      id: "73",
+      type: "r32",
+      home_team_name_en: "South Africa",
+      away_team_name_en: "Canada",
+      home_team_label: "Winner Group A",
+      away_team_label: "Runner-up Group B",
+      local_date: "06/28/2026 12:00",
+      stadium_id: "4",
+      finished: "TRUE",
+      time_elapsed: "finished",
+      home_score: "1",
+      away_score: "1"
+    },
+    {
+      id: "90",
+      type: "r16",
+      home_team_name_en: "Canada",
+      home_team_label: "Winner Match 73",
+      away_team_label: "Winner Match 75",
+      local_date: "07/06/2026 12:00",
+      stadium_id: "4",
+      finished: "FALSE",
+      time_elapsed: "notstarted",
+      home_score: "0",
+      away_score: "0"
+    }
+  ]);
+
+  const finishedMatch = matches.find((match) => match.id === "KO-R32-1");
+  assert.equal(finishedMatch.qualifiedTeamId, "Canadá");
 });
 
 test("consulta resultados novamente após falha temporária", async () => {

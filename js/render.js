@@ -32,6 +32,8 @@ export function renderSyncStatus(status) {
   if (!status) return "Resultados ainda sem status de sincronização";
 
   const sourceLabels = {
+    espn: "ESPN",
+    "multi-source": "múltiplas fontes",
     "api-football": "API-Football",
     "worldcup26.ir": "worldcup26.ir"
   };

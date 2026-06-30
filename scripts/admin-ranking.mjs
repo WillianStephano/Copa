@@ -34,6 +34,8 @@ export async function updateRanking(db) {
   );
   const ranking = buildRanking(users, predictions, matches);
   const details = buildRankingDetails(predictions, matches);
+  const knockoutRanking = buildRanking(users, predictions, matches, { phase: "knockout" });
+  const knockoutDetails = buildRankingDetails(predictions, matches, { phase: "knockout" });
   const matchSummaries = buildMatchPredictionSummaries(users, predictions, matches);
 
   const fallbackFinalizedMatches = normalizedMatches.filter(
@@ -64,14 +66,40 @@ export async function updateRanking(db) {
     await batch.commit();
   }
 
+  for (let offset = 0; offset < knockoutRanking.length; offset += 400) {
+    const batch = db.batch();
+    knockoutRanking.slice(offset, offset + 400).forEach((entry) => {
+      batch.set(db.collection("rankingsKnockout").doc(entry.uid), {
+        ...entry,
+        details: knockoutDetails.get(entry.uid) || [],
+        updatedAt: FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+  }
+
   const activeUids = new Set(ranking.map((entry) => entry.uid));
   const staleDocuments = existingRankingSnapshot.docs.filter(
     (item) => !activeUids.has(item.id)
   );
 
+  const existingKnockoutRankingSnapshot = await db.collection("rankingsKnockout").get();
+  const activeKnockoutUids = new Set(knockoutRanking.map((entry) => entry.uid));
+  const staleKnockoutDocuments = existingKnockoutRankingSnapshot.docs.filter(
+    (item) => !activeKnockoutUids.has(item.id)
+  );
+
   for (let offset = 0; offset < staleDocuments.length; offset += 400) {
     const batch = db.batch();
     staleDocuments.slice(offset, offset + 400).forEach((item) => {
+      batch.delete(item.ref);
+    });
+    await batch.commit();
+  }
+
+  for (let offset = 0; offset < staleKnockoutDocuments.length; offset += 400) {
+    const batch = db.batch();
+    staleKnockoutDocuments.slice(offset, offset + 400).forEach((item) => {
       batch.delete(item.ref);
     });
     await batch.commit();

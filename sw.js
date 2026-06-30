@@ -1,4 +1,4 @@
-const CACHE_NAME = "copa2026-bolao-v8";
+const CACHE_NAME = "copa2026-bolao-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./js/bolao.js",
   "./js/data.js",
   "./js/daily-ranking.js",
+  "./js/knockout.js",
   "./js/render.js",
   "./js/scoring.js",
   "./js/standings.js",

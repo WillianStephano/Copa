@@ -10,7 +10,7 @@ import { updateRanking } from "./admin-ranking.mjs";
 import { fetchEspnEvents, mapEspnEvent } from "./espn-api.mjs";
 import { normalizeResultStatus } from "./result-status.mjs";
 import { shouldSyncResults } from "./sync-policy.mjs";
-import { fetchOfficialMatches, mapApiMatch } from "./worldcup-api.mjs";
+import { fetchOfficialMatches, mapApiMatches } from "./worldcup-api.mjs";
 import { roundOf32Matches } from "../js/knockout.js";
 
 const credentialsJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -91,7 +91,7 @@ async function fetchFromApiFootball(apiKey) {
 
 async function fetchFromWorldCup26() {
   const apiMatches = await fetchOfficialMatches();
-  return apiMatches.map(mapApiMatch).filter(Boolean);
+  return mapApiMatches(apiMatches);
 }
 
 async function fetchFromEspn() {
@@ -99,20 +99,51 @@ async function fetchFromEspn() {
   return events.map(mapEspnEvent).filter(Boolean);
 }
 
+function mergeMappedMatches(sourceResults) {
+  const mergedById = new Map();
+
+  sourceResults.forEach(({ source, matches }) => {
+    matches.forEach((match) => {
+      const previous = mergedById.get(match.id) || {};
+      mergedById.set(match.id, {
+        ...previous,
+        ...match,
+        source
+      });
+    });
+  });
+
+  return Array.from(mergedById.values());
+}
+
 async function fetchMappedMatches() {
   const attemptedSources = [];
   const apiFootballKey = process.env.API_FOOTBALL_KEY;
   const useApiFootball = process.env.ENABLE_API_FOOTBALL === "true";
+  const sourceResults = [];
+
+  attemptedSources.push("worldcup26.ir");
+  try {
+    const mapped = await fetchFromWorldCup26();
+    if (mapped.length) {
+      sourceResults.push({ source: "worldcup26.ir", matches: mapped });
+    } else {
+      console.warn("worldcup26.ir respondeu, mas nenhum jogo foi mapeado.");
+    }
+  } catch (error) {
+    console.warn("worldcup26.ir falhou.", error);
+  }
 
   attemptedSources.push("espn");
   try {
     const mapped = await fetchFromEspn();
     if (mapped.length) {
-      return { mapped, source: "espn", attemptedSources };
+      sourceResults.push({ source: "espn", matches: mapped });
+    } else {
+      console.warn("ESPN respondeu, mas nenhum jogo foi mapeado.");
     }
-    console.warn("ESPN respondeu, mas nenhum jogo foi mapeado.");
   } catch (error) {
-    console.warn("ESPN falhou. Usando worldcup26.ir como fallback.", error);
+    console.warn("ESPN falhou.", error);
   }
 
   if (useApiFootball && apiFootballKey) {
@@ -120,17 +151,27 @@ async function fetchMappedMatches() {
     try {
       const mapped = await fetchFromApiFootball(apiFootballKey);
       if (mapped.length) {
-        return { mapped, source: "api-football", attemptedSources };
+        sourceResults.push({ source: "api-football", matches: mapped });
+      } else {
+        console.warn("API-Football respondeu, mas nenhum jogo foi mapeado.");
       }
-      console.warn("API-Football respondeu, mas nenhum jogo foi mapeado.");
     } catch (error) {
-      console.warn("API-Football falhou. Usando worldcup26.ir como fallback.", error);
+      console.warn("API-Football falhou.", error);
     }
   }
 
-  attemptedSources.push("worldcup26.ir");
-  const mapped = await fetchFromWorldCup26();
-  return { mapped, source: "worldcup26.ir", attemptedSources };
+  if (!sourceResults.length) {
+    throw new Error("Nenhuma fonte retornou jogos mapeados.");
+  }
+
+  const mapped = mergeMappedMatches(sourceResults);
+  const sourcesUsed = sourceResults.map((entry) => entry.source);
+  return {
+    mapped,
+    source: sourcesUsed.length === 1 ? sourcesUsed[0] : "multi-source",
+    attemptedSources,
+    sourcesUsed
+  };
 }
 
 await syncMatches(roundOf32Matches);
@@ -150,7 +191,7 @@ if (!syncDecision.shouldSync) {
 }
 
 try {
-  const { mapped, source, attemptedSources } = await fetchMappedMatches();
+  const { mapped, source, attemptedSources, sourcesUsed } = await fetchMappedMatches();
   const mappedMatches = await syncMatches(mapped);
   const ranking = await updateRanking(db);
 
@@ -159,6 +200,7 @@ try {
     reason: syncDecision.reason,
     source,
     attemptedSources,
+    sourcesUsed,
     mappedMatches: mappedMatches.length,
     rankedUsers: ranking.length,
     lastSuccessfulAt: FieldValue.serverTimestamp(),

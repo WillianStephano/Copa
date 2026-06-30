@@ -61,6 +61,15 @@ export function subscribeToRanking(callback, onError) {
   );
 }
 
+export function subscribeToKnockoutRanking(callback, onError) {
+  const rankingQuery = query(collection(db, "rankingsKnockout"), orderBy("position", "asc"));
+  return onSnapshot(
+    rankingQuery,
+    (snapshot) => callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))),
+    onError
+  );
+}
+
 export function subscribeToMatchPredictionSummaries(callback, onError) {
   return onSnapshot(
     collection(db, "matchPredictionSummaries"),
